@@ -3,8 +3,11 @@ import { Hono } from 'hono'
 import {
   createAuthenticationMiddleware,
   createCorsMiddleware,
+  createHttpObservabilityMiddleware,
   createRequestContextMiddleware,
   type GatewayEnvironment,
+  type HttpMetrics,
+  type ObservabilitySink,
 } from './gateway/index.js'
 import {
   type AuthenticateAccessToken,
@@ -41,12 +44,21 @@ interface AppDependencies {
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
   authWebUrl?: string
+  metrics?: HttpMetrics
+  observabilitySink?: ObservabilitySink
 }
 
 export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvironment> {
   const app = new Hono<GatewayEnvironment>()
-  app.use('*', createCorsMiddleware({ trustedOrigins: dependencies.trustedOrigins ?? [] }))
   app.use('*', createRequestContextMiddleware())
+  app.use(
+    '*',
+    createHttpObservabilityMiddleware({
+      ...(dependencies.metrics ? { metrics: dependencies.metrics } : {}),
+      ...(dependencies.observabilitySink ? { sink: dependencies.observabilitySink } : {}),
+    }),
+  )
+  app.use('*', createCorsMiddleware({ trustedOrigins: dependencies.trustedOrigins ?? [] }))
   if (dependencies.authenticateAccessToken) {
     app.use(
       '*',
@@ -57,6 +69,9 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     )
   }
   app.get('/health', (context) => context.json({ status: 'ok' }))
+  if (dependencies.metrics) {
+    app.get('/metrics', (context) => context.text(dependencies.metrics?.render() ?? ''))
+  }
   if (
     dependencies.sendOtp ||
     dependencies.sendEmailOtp ||

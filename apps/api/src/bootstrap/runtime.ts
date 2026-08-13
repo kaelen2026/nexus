@@ -3,6 +3,12 @@ import { z } from 'zod'
 
 import { createApp } from '../app.js'
 import {
+  createConsoleObservabilitySink,
+  createInMemoryHttpMetrics,
+  type HttpMetrics,
+  type ObservabilitySink,
+} from '../gateway/index.js'
+import {
   createAppleOAuthProvider,
   createAuthModule,
   createGoogleOAuthProvider,
@@ -42,10 +48,14 @@ interface CreateApiRuntimeOptions {
   emailSender?: EmailSender
   llmProvider: LlmProvider
   smsSender: SmsSender
+  metrics?: HttpMetrics
+  observabilitySink?: ObservabilitySink
 }
 
 export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const environment = runtimeEnvironmentSchema.parse(options.env)
+  const metrics = options.metrics ?? createInMemoryHttpMetrics()
+  const observabilitySink = options.observabilitySink ?? createConsoleObservabilitySink()
   if (Boolean(environment.GOOGLE_CLIENT_ID) !== Boolean(environment.GOOGLE_CLIENT_SECRET)) {
     throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together')
   }
@@ -130,10 +140,13 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     startOAuth: auth.startOAuth,
     completeOAuth: auth.completeOAuth,
     authWebUrl: environment.APP_PUBLIC_URL,
+    metrics,
+    observabilitySink,
   })
 
   return {
     app,
+    metrics,
     async close() {
       billing.close()
       await Promise.allSettled([auth.close(), database.close()])
