@@ -47,3 +47,7 @@ After durable User creation, Users publishes `users.user-created`. Billing consu
 ## Public API
 
 Potential exports include `createUser`, `getUserStatus`, and a minimal user summary when another module genuinely needs them. Profile repos and internal update workflows stay private. `GET /users/me` obtains `userId` from `Identity.subject`.
+
+## Current User
+
+`GET /users/me` requires a Gateway-authenticated user Identity and loads the authoritative User from Users-owned storage. It does not return JWT claims as user data. Active Users receive their stable ID, status, and timestamps. Suspended Users receive `403 USER_SUSPENDED`; deleted or missing Users receive `404 USER_NOT_FOUND`. Auth Account status remains independent from User status.

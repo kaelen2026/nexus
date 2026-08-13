@@ -3,6 +3,7 @@ import { z } from 'zod'
 
 import { createApp } from '../app.js'
 import { createAuthModule, type SmsSender } from '../modules/auth/index.js'
+import { createUsersModule } from '../modules/users/index.js'
 
 const runtimeEnvironmentSchema = z.object({
   DATABASE_URL: z.url(),
@@ -48,6 +49,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     verifyPhoneOtp: auth.verifyPhoneOtp,
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
+    getCurrentUser: createUsersModule(database.client).getCurrentUser,
   })
 
   return {

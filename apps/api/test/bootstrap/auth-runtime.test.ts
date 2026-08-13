@@ -69,6 +69,22 @@ describe('Auth runtime composition', () => {
         .find((cookie) => cookie.startsWith('__Secure-nexus_refresh='))
         ?.split(';', 1)[0]
       expect(refreshCookie).toBeDefined()
+      const accessCookie = verifyResponse.headers
+        .getSetCookie()
+        .find((cookie) => cookie.startsWith('__Host-nexus_access='))
+        ?.split(';', 1)[0]
+      expect(accessCookie).toBeDefined()
+
+      const currentUserResponse = await runtime.app.request('/users/me', {
+        headers: { cookie: accessCookie ?? '' },
+      })
+      expect(currentUserResponse.status).toBe(200)
+      await expect(currentUserResponse.json()).resolves.toEqual({
+        id: expect.any(String),
+        status: 'active',
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+      })
 
       const refreshResponse = await runtime.app.request('/auth/refresh', {
         method: 'POST',
