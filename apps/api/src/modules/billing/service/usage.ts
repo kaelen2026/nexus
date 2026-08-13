@@ -46,9 +46,7 @@ export async function commitUsage(
       return
     }
     if (reservation.status === 'released') return
-    if (input.actualUnits > reservation.reservedUnits) {
-      throw new Error('Actual usage exceeds reserved units')
-    }
+    await lockUsagePolicy(transaction, reservation)
     await commitUsageReservation(transaction, {
       reservationId: reservation.reservationId,
       userId: reservation.userId,

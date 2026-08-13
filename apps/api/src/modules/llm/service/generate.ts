@@ -18,6 +18,14 @@ export function createGenerate(options: {
     })
     if (!entitled) throw new LlmAccessDeniedError()
 
+    const resolvedModel = resolveModel(input.model)
+    const inputTokens = await options.provider.countInputTokens({
+      providerModel: resolvedModel.providerModel,
+      prompt: input.prompt,
+    })
+    const outputTokenBudget = input.maxTokens - inputTokens
+    if (outputTokenBudget < 1) throw new LlmAccessDeniedError()
+
     const reservation = await options.billing.reserveUsage({
       userId: input.userId,
       key: 'llm.tokens',
@@ -25,7 +33,6 @@ export function createGenerate(options: {
     })
     if (!reservation) throw new LlmAccessDeniedError()
 
-    const resolvedModel = resolveModel(input.model)
     let request: { requestId: string }
     try {
       request = await createRequest(options.database, {
@@ -43,7 +50,7 @@ export function createGenerate(options: {
       response = await options.provider.generate({
         providerModel: resolvedModel.providerModel,
         prompt: input.prompt,
-        maxTokens: input.maxTokens,
+        maxTokens: outputTokenBudget,
       })
     } catch (error) {
       await failRequest(options.database, {
