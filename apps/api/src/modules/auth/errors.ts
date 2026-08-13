@@ -18,3 +18,17 @@ export class RefreshTokenReuseError extends Error {
     this.name = 'RefreshTokenReuseError'
   }
 }
+
+export class InvalidOAuthCallbackError extends Error {
+  constructor() {
+    super('Invalid OAuth callback')
+    this.name = 'InvalidOAuthCallbackError'
+  }
+}
+
+export class OAuthProviderUnavailableError extends Error {
+  constructor() {
+    super('OAuth provider unavailable')
+    this.name = 'OAuthProviderUnavailableError'
+  }
+}

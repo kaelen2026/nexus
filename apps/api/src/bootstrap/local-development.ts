@@ -14,6 +14,8 @@ const localDefaults = {
   REDIS_URL: 'redis://localhost:6379',
   TOKEN_SECRET: 'local-development-token-secret-32-characters',
   TRUSTED_ORIGINS: 'http://localhost:3001',
+  APP_PUBLIC_URL: 'http://localhost:3001',
+  API_PUBLIC_URL: 'http://localhost:3000',
 } as const
 
 export async function createLocalDevelopmentRuntime(options: {
@@ -33,6 +35,18 @@ export async function createLocalDevelopmentRuntime(options: {
       REDIS_URL: options.env.REDIS_URL ?? localDefaults.REDIS_URL,
       TOKEN_SECRET: options.env.TOKEN_SECRET ?? localDefaults.TOKEN_SECRET,
       TRUSTED_ORIGINS: options.env.TRUSTED_ORIGINS ?? localDefaults.TRUSTED_ORIGINS,
+      APP_PUBLIC_URL: options.env.APP_PUBLIC_URL ?? localDefaults.APP_PUBLIC_URL,
+      API_PUBLIC_URL: options.env.API_PUBLIC_URL ?? localDefaults.API_PUBLIC_URL,
+      ...(options.env.GOOGLE_CLIENT_ID ? { GOOGLE_CLIENT_ID: options.env.GOOGLE_CLIENT_ID } : {}),
+      ...(options.env.GOOGLE_CLIENT_SECRET
+        ? { GOOGLE_CLIENT_SECRET: options.env.GOOGLE_CLIENT_SECRET }
+        : {}),
+      ...(options.env.APPLE_CLIENT_ID ? { APPLE_CLIENT_ID: options.env.APPLE_CLIENT_ID } : {}),
+      ...(options.env.APPLE_KEY_ID ? { APPLE_KEY_ID: options.env.APPLE_KEY_ID } : {}),
+      ...(options.env.APPLE_TEAM_ID ? { APPLE_TEAM_ID: options.env.APPLE_TEAM_ID } : {}),
+      ...(options.env.APPLE_PRIVATE_KEY
+        ? { APPLE_PRIVATE_KEY: options.env.APPLE_PRIVATE_KEY }
+        : {}),
     },
     emailSender: email.sender,
     llmProvider: createLocalDevelopmentLlmProvider(),

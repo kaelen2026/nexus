@@ -2,7 +2,14 @@ import { createDatabase, migrateDatabase } from '@nexus/database'
 import { z } from 'zod'
 
 import { createApp } from '../app.js'
-import { createAuthModule, type EmailSender, type SmsSender } from '../modules/auth/index.js'
+import {
+  createAppleOAuthProvider,
+  createAuthModule,
+  createGoogleOAuthProvider,
+  type EmailSender,
+  type OAuthProvider,
+  type SmsSender,
+} from '../modules/auth/index.js'
 import { createBillingModule } from '../modules/billing/index.js'
 import { createLlmModule, type LlmProvider } from '../modules/llm/index.js'
 import { createUsersModule } from '../modules/users/index.js'
@@ -19,11 +26,20 @@ const runtimeEnvironmentSchema = z.object({
       .map((origin) => origin.trim())
       .filter(Boolean),
   ),
+  APP_PUBLIC_URL: z.url().default('http://localhost:3001'),
+  API_PUBLIC_URL: z.url().default('http://localhost:3000'),
+  GOOGLE_CLIENT_ID: z.string().min(1).optional(),
+  GOOGLE_CLIENT_SECRET: z.string().min(1).optional(),
+  APPLE_CLIENT_ID: z.string().min(1).optional(),
+  APPLE_KEY_ID: z.string().min(1).optional(),
+  APPLE_TEAM_ID: z.string().min(1).optional(),
+  APPLE_PRIVATE_KEY: z.string().min(1).optional(),
 })
 
 interface CreateApiRuntimeOptions {
   env: Record<string, string | undefined>
   generateOtp?: () => string
+  emailSender?: EmailSender
   emailSender?: EmailSender
   llmProvider: LlmProvider
   smsSender: SmsSender
@@ -31,6 +47,44 @@ interface CreateApiRuntimeOptions {
 
 export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const environment = runtimeEnvironmentSchema.parse(options.env)
+  if (Boolean(environment.GOOGLE_CLIENT_ID) !== Boolean(environment.GOOGLE_CLIENT_SECRET)) {
+    throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together')
+  }
+  const appleConfiguration = [
+    environment.APPLE_CLIENT_ID,
+    environment.APPLE_KEY_ID,
+    environment.APPLE_TEAM_ID,
+    environment.APPLE_PRIVATE_KEY,
+  ]
+  if (appleConfiguration.some(Boolean) && !appleConfiguration.every(Boolean)) {
+    throw new Error('All Apple OAuth environment variables must be configured together')
+  }
+  const oauthProviders: OAuthProvider[] = []
+  if (environment.GOOGLE_CLIENT_ID && environment.GOOGLE_CLIENT_SECRET) {
+    oauthProviders.push(
+      createGoogleOAuthProvider({
+        clientId: environment.GOOGLE_CLIENT_ID,
+        clientSecret: environment.GOOGLE_CLIENT_SECRET,
+        redirectUri: `${environment.API_PUBLIC_URL}/auth/oauth/google/callback`,
+      }),
+    )
+  }
+  if (
+    environment.APPLE_CLIENT_ID &&
+    environment.APPLE_KEY_ID &&
+    environment.APPLE_TEAM_ID &&
+    environment.APPLE_PRIVATE_KEY
+  ) {
+    oauthProviders.push(
+      createAppleOAuthProvider({
+        clientId: environment.APPLE_CLIENT_ID,
+        keyId: environment.APPLE_KEY_ID,
+        teamId: environment.APPLE_TEAM_ID,
+        privateKey: environment.APPLE_PRIVATE_KEY,
+        redirectUri: `${environment.API_PUBLIC_URL}/auth/oauth/apple/callback`,
+      }),
+    )
+  }
   const database = createDatabase({ url: environment.DATABASE_URL })
   await migrateDatabase(database.client)
   const eventBus = createInMemoryEventBus()
@@ -53,6 +107,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
       smsSender: options.smsSender,
       tokenSecret: environment.TOKEN_SECRET,
       publishUserCreated: users.publishUserCreated,
+      oauthProviders,
     })
   } catch (error) {
     billing.close()
@@ -71,6 +126,9 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     logout: auth.logout,
     logoutAll: auth.logoutAll,
     generate: llm.generate,
+    startOAuth: auth.startOAuth,
+    completeOAuth: auth.completeOAuth,
+    authWebUrl: environment.APP_PUBLIC_URL,
   })
 
   return {

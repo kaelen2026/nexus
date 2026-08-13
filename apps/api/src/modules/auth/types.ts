@@ -48,6 +48,33 @@ export type AuthenticateAccessToken = (token: string) => Promise<{
 export type Logout = (input: { sessionId: string }) => Promise<void>
 export type LogoutAll = (input: { userId: string }) => Promise<void>
 
+export type OAuthProviderId = 'google' | 'apple'
+export type StartOAuth = (input: { provider: OAuthProviderId }) => Promise<string>
+export type CompleteOAuth = (input: {
+  provider: OAuthProviderId
+  code: string
+  state: string
+}) => Promise<AuthTokenPair>
+
+export interface OAuthFlow {
+  provider: OAuthProviderId
+  codeVerifier: string
+  nonce: string
+}
+
+export interface OAuthFlowStore {
+  save(state: string, flow: OAuthFlow): Promise<void>
+  consume(state: string): Promise<OAuthFlow | undefined>
+}
+
+export interface OAuthProvider {
+  id: OAuthProviderId
+  createAuthorizationUrl(input: { state: string; nonce: string; codeChallenge: string }): URL
+  exchangeCode(input: { code: string; nonce: string; codeVerifier: string }): Promise<{
+    providerSubject: string
+  }>
+}
+
 export const authCookieNames = {
   access: '__Host-nexus_access',
   refresh: '__Secure-nexus_refresh',
