@@ -22,8 +22,9 @@ Remove duplication, clarify names, and improve boundaries while the suite remain
 - Module integration tests call the module public API and use real PostgreSQL or Redis when persistence semantics matter.
 - HTTP tests call the Hono app through `app.request()` and verify validation, authentication, status codes, and response mapping.
 - Critical-flow tests protect complete cross-module business outcomes.
-- Architecture tests are intended to enforce dependency and ownership rules. Currently only the
-  bootstrap restriction against importing the Redis SDK directly is automated.
+- Architecture tests enforce service portability, router isolation, public module APIs, repository
+  schema ownership, an acyclic module graph, and the bootstrap restriction against importing the
+  Redis SDK directly.
 
 Prefer deterministic fakes at true infrastructure seams: SMS senders, LLM providers, clocks, and ID generators. Do not mock Hono internals, Drizzle query chains, or another module's private implementation.
 

@@ -125,10 +125,10 @@ export function GenerateWorkspace({
                 </span>
               </label>
               <label className="block text-base font-semibold">
-                最大输出
+                总 Token 预算
                 <span className="relative mt-3 block">
                   <select
-                    aria-label="最大输出"
+                    aria-label="总 Token 预算"
                     value={maxTokens}
                     onChange={(event) => setMaxTokens(Number(event.target.value))}
                     className="h-14 w-full appearance-none rounded-xl border bg-background px-4 pr-10 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 lg:h-16 lg:text-lg"

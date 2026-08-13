@@ -61,7 +61,13 @@ Resolve Logical Model
 
 Provider failure finalizes the request and releases the reservation.
 
-The initial non-streaming service resolves the `standard` logical model, checks the `llm.generate` entitlement, and reserves the requested total-token budget under `llm.tokens`. Provider success commits normalized input plus output tokens; provider failure releases the reservation before propagating a provider-neutral error. A failure after the Provider succeeds does not release consumed quota.
+The initial non-streaming service resolves the `standard` logical model, checks the `llm.generate`
+entitlement, asks the selected Provider adapter to count input tokens, and reserves the requested
+total-token budget under `llm.tokens`. It passes only the remaining budget to the Provider as the
+output limit. Provider success commits normalized input plus output tokens; provider failure
+releases the reservation before propagating a provider-neutral error. If reported usage slightly
+exceeds the reservation, Billing still records the consumed units so quota state cannot remain
+permanently reserved. A failure after the Provider succeeds does not release consumed quota.
 
 `POST /llm/generate` requires a Gateway-authenticated User and always takes `userId` from `Identity.subject`. The router validates the logical model, prompt, and requested token budget. Missing entitlement or quota maps to `403 LLM_ACCESS_DENIED`; adapter failures map to `502 LLM_PROVIDER_ERROR` without exposing provider details.
 

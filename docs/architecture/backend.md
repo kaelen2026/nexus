@@ -110,8 +110,8 @@ The first protected slice is `Phone OTP -> User + Account + Session -> Free Plan
 
 ## Architecture Verification Matrix
 
-Executable architecture tests should enforce all of the following. As of 2026-08-13, only the
-bootstrap restriction against importing the Redis SDK directly is automated:
+Executable architecture tests enforce the following rules, alongside the bootstrap restriction
+against importing the Redis SDK directly:
 
 | Rule | Violation to reject |
 | --- | --- |

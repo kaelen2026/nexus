@@ -17,23 +17,17 @@ source and tests from target architecture described elsewhere.
 | LLM requests | Durable processing/succeeded/failed lifecycle without prompt or provider-error persistence | PostgreSQL integration tests |
 | Web workspace | Prompt entry, output limit, generation result, token usage, copy, stable error states | Vitest + Testing Library |
 
-PostgreSQL schemas and seven committed migrations exist for Users, Auth, Billing, and LLM. Redis is
+PostgreSQL schemas and ten committed migrations exist for Users, Auth, Billing, and LLM. Redis is
 used only for short-lived OTP challenges. The event bus is synchronous and in-memory; Billing's
 consumer protects its durable effect with event receipts and database uniqueness.
 
-## Runtime gap
+## Runtime composition
 
 `createApiRuntime` composes the database, migrations, Redis-backed Auth, event bus, Users, Billing,
-LLM, and all HTTP routers. It requires concrete `SmsSender` and `LlmProvider` dependencies.
-
-The executable `apps/api/src/server.ts` does not call that composition root yet. It creates the bare
-Hono app, so `pnpm --filter @nexus/api dev` currently serves only `GET /health`. Consequently the Web
-login and generation screens cannot complete their flows against the default development server.
-This is a runtime integration gap, not a missing domain-service implementation.
-
-The next cohesive increment should add real provider adapters and a server composition path, with
-configuration validation and shutdown handling, before documenting the full stack as locally
-runnable.
+LLM, and all HTTP routers. The executable development server supplies local SMS, email, and LLM
+adapters, validates its environment, and closes owned resources during shutdown. The complete Web
+login and generation flow is locally runnable. Concrete production providers and a production
+deployment entry point remain deferred.
 
 ## Deliberately deferred
 
@@ -42,9 +36,8 @@ runnable.
 - Payment-provider integration and paid-plan management.
 - Transactional outbox or external event broker.
 - Rate limiting, structured application logging, metrics, and tracing.
-- The full architecture rule suite. The current architecture test only guards bootstrap from a
-  direct Redis SDK import; the remaining boundary rules are conventions awaiting executable tests.
+- Additional architecture rules beyond the current service, router, module-public-API, repository
+  ownership, dependency-cycle, and bootstrap SDK checks.
 
 These are not prerequisites for preserving the current module boundaries, and should be added only
 when the vertical slice needs them.
-

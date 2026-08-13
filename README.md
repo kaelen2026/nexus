@@ -24,9 +24,9 @@ The API follows `router -> service -> repo`. Business modules live in
 ## Current status
 
 The domain flow is implemented and exercised through unit, HTTP, module integration, and web
-component tests. The default API entry point currently exposes only `GET /health`: full runtime
-startup is intentionally blocked until concrete production `SmsSender` and `LlmProvider` adapters
-are selected and supplied to `createApiRuntime`.
+component tests. In development, the default API entry point composes the complete local runtime
+with in-memory SMS/email inboxes and a deterministic LLM provider. Production provider selection
+and deployment composition remain deferred.
 
 See [project status](docs/project-status.md) for the implementation matrix and known gaps.
 
@@ -55,4 +55,3 @@ read [local development](docs/local-development.md).
 - [Auth](docs/modules/auth.md), [Users](docs/modules/users.md),
   [Billing](docs/modules/billing.md), and [LLM](docs/modules/llm.md)
 - [Business event contracts](docs/contracts/events.md)
-
