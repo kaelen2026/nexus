@@ -26,3 +26,5 @@ Default local URLs:
 postgresql://nexus:nexus@localhost:5432/nexus
 redis://localhost:6379
 ```
+
+API integration test files currently run serially because they share the local PostgreSQL database and Redis instance. This avoids cross-file `TRUNCATE` and key-lifecycle races. Parallel execution should be enabled only after provisioning an isolated database/schema and Redis namespace per worker.
