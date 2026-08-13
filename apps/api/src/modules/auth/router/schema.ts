@@ -20,6 +20,18 @@ export const verifyEmailOtpBodySchema = z.object({
   sessionMode: z.enum(['token', 'cookie']).optional(),
 })
 
+export const loginEmailPasswordBodySchema = z.object({
+  email: z.email().max(320),
+  password: z.string().min(12).max(128),
+  sessionMode: z.enum(['token', 'cookie']).optional(),
+})
+
+export const resetEmailPasswordBodySchema = z.object({
+  email: z.email().max(320),
+  otp: z.string().regex(/^\d{6}$/),
+  newPassword: z.string().min(12).max(128),
+})
+
 export const refreshBodySchema = z.object({
   refreshToken: z.string().min(32).optional(),
 })

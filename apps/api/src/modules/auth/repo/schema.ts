@@ -35,6 +35,17 @@ export const authSessions = pgTable(
   (table) => [index('auth_sessions_user_id_idx').on(table.userId)],
 )
 
+export const authCredentials = pgTable('auth_credentials', {
+  id: uuid().defaultRandom().primaryKey(),
+  accountId: uuid('account_id')
+    .notNull()
+    .unique()
+    .references(() => authAccounts.id),
+  passwordHash: text('password_hash').notNull(),
+  createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  updatedAt: timestamp('updated_at', { withTimezone: true }).notNull().defaultNow(),
+})
+
 export const authRefreshTokens = pgTable(
   'auth_refresh_tokens',
   {
