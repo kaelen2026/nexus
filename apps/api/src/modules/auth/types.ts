@@ -15,3 +15,5 @@ export interface SmsSender {
 export interface Clock {
   now(): Date
 }
+
+export type SendOtp = (input: { phoneNumber: string }) => Promise<{ expiresAt: Date }>
