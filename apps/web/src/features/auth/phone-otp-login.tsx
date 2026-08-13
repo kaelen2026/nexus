@@ -1,7 +1,7 @@
 'use client'
 
 import { ArrowLeftIcon, LoaderCircleIcon } from 'lucide-react'
-import { type FormEvent, useState } from 'react'
+import { type FormEvent, useEffect, useState } from 'react'
 import { z } from 'zod'
 
 import { Button } from '@/components/ui/button'
@@ -32,6 +32,35 @@ export function PhoneOtpLogin({
   const [otp, setOtp] = useState('')
   const [error, setError] = useState<string>()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [otpExpiresAt, setOtpExpiresAt] = useState<number>()
+  const [resendSeconds, setResendSeconds] = useState(0)
+
+  useEffect(() => {
+    if (!otpExpiresAt) return
+
+    function updateRemainingTime() {
+      setResendSeconds(Math.max(0, Math.ceil(((otpExpiresAt ?? 0) - Date.now()) / 1000)))
+    }
+
+    updateRemainingTime()
+    const timer = window.setInterval(updateRemainingTime, 1000)
+    return () => window.clearInterval(timer)
+  }, [otpExpiresAt])
+
+  async function requestOtp(validPhoneNumber: string) {
+    setError(undefined)
+    setIsSubmitting(true)
+    try {
+      const result = await api.sendOtp({ phoneNumber: validPhoneNumber })
+      setPhoneNumber(validPhoneNumber)
+      setOtpExpiresAt(new Date(result.expiresAt).getTime())
+      setStep('otp')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
 
   async function sendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -41,17 +70,7 @@ export function PhoneOtpLogin({
       return
     }
 
-    setError(undefined)
-    setIsSubmitting(true)
-    try {
-      await api.sendOtp({ phoneNumber: parsed.data })
-      setPhoneNumber(parsed.data)
-      setStep('otp')
-    } catch (cause) {
-      setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
-    } finally {
-      setIsSubmitting(false)
-    }
+    await requestOtp(parsed.data)
   }
 
   async function verifyOtp(event: FormEvent<HTMLFormElement>) {
@@ -169,7 +188,14 @@ export function PhoneOtpLogin({
             <ArrowLeftIcon className="size-4" aria-hidden="true" />
             更换手机号
           </button>
-          <p className="mt-10 text-center text-sm text-muted-foreground">重新发送（60s）</p>
+          <button
+            type="button"
+            disabled={isSubmitting || resendSeconds > 0}
+            onClick={() => requestOtp(phoneNumber)}
+            className="mx-auto mt-10 block text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary/20 disabled:text-muted-foreground disabled:no-underline"
+          >
+            {resendSeconds > 0 ? `重新发送（${resendSeconds}s）` : '重新发送'}
+          </button>
           <AuthError message={error} />
         </form>
       )}
