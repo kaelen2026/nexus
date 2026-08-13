@@ -32,7 +32,14 @@ describe('createPhoneIdentity', () => {
     expect(identity.userId).toMatch(/^[0-9a-f-]{36}$/)
     expect(identity.accountId).toMatch(/^[0-9a-f-]{36}$/)
     expect(identity.sessionId).toMatch(/^[0-9a-f-]{36}$/)
-    expect(await identityCounts()).toEqual({ users: 1, accounts: 1, sessions: 1, pendingEvents: 1 })
+    expect(await identityCounts()).toEqual({
+      users: 1,
+      profiles: 1,
+      settings: 1,
+      accounts: 1,
+      sessions: 1,
+      pendingEvents: 1,
+    })
   })
 
   it('reuses the User and Account for repeated authentication', async () => {
@@ -48,7 +55,14 @@ describe('createPhoneIdentity', () => {
     expect(second.userId).toBe(first.userId)
     expect(second.accountId).toBe(first.accountId)
     expect(second.sessionId).not.toBe(first.sessionId)
-    expect(await identityCounts()).toEqual({ users: 1, accounts: 1, sessions: 2, pendingEvents: 1 })
+    expect(await identityCounts()).toEqual({
+      users: 1,
+      profiles: 1,
+      settings: 1,
+      accounts: 1,
+      sessions: 2,
+      pendingEvents: 1,
+    })
     expect(publishUserCreated).toHaveBeenCalledOnce()
     expect(publishUserCreated).toHaveBeenCalledWith(first.userId)
   })
@@ -61,7 +75,14 @@ describe('createPhoneIdentity', () => {
       }),
     ).rejects.toThrow()
 
-    expect(await identityCounts()).toEqual({ users: 0, accounts: 0, sessions: 0, pendingEvents: 0 })
+    expect(await identityCounts()).toEqual({
+      users: 0,
+      profiles: 0,
+      settings: 0,
+      accounts: 0,
+      sessions: 0,
+      pendingEvents: 0,
+    })
   })
 
   it('replays a durable user-created event after its first delivery fails', async () => {
@@ -81,7 +102,14 @@ describe('createPhoneIdentity', () => {
         { publishUserCreated: users.publishUserCreated },
       ),
     ).rejects.toThrow('billing unavailable')
-    expect(await identityCounts()).toEqual({ users: 1, accounts: 1, sessions: 1, pendingEvents: 1 })
+    expect(await identityCounts()).toEqual({
+      users: 1,
+      profiles: 1,
+      settings: 1,
+      accounts: 1,
+      sessions: 1,
+      pendingEvents: 1,
+    })
 
     stopFailing()
     const delivered = vi.fn().mockResolvedValue(undefined)
@@ -102,12 +130,16 @@ describe('createPhoneIdentity', () => {
 async function identityCounts() {
   const counts = await database.client.execute<{
     users: number
+    profiles: number
+    settings: number
     accounts: number
     sessions: number
     pendingEvents: number
   }>(sql`
     select
       (select count(*)::int from users) as users,
+      (select count(*)::int from user_profiles) as profiles,
+      (select count(*)::int from user_settings) as settings,
       (select count(*)::int from auth_accounts) as accounts,
       (select count(*)::int from auth_sessions) as sessions,
       (select count(*)::int from users_user_created_outbox where published_at is null) as "pendingEvents"
