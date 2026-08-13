@@ -4,9 +4,11 @@ import { useQuery } from '@tanstack/react-query'
 import { AlertTriangleIcon, LoaderCircleIcon, SparklesIcon } from 'lucide-react'
 import { useEffect } from 'react'
 
+import { NexusMark } from '@/components/nexus-brand'
 import { Button } from '@/components/ui/button'
-import { NexusMark } from '@/features/auth/phone-otp-login'
 import { ApiError, apiClient, type NexusApi } from '@/lib/api-client'
+
+const defaultNavigate = (path: string) => window.location.assign(path)
 
 interface CurrentUserHomeProps {
   api?: NexusApi
@@ -15,7 +17,7 @@ interface CurrentUserHomeProps {
 
 export function CurrentUserHome({
   api = apiClient,
-  navigate = (path) => window.location.assign(path),
+  navigate = defaultNavigate,
 }: CurrentUserHomeProps) {
   const userQuery = useQuery({
     queryKey: ['current-user'],
