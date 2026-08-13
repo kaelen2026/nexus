@@ -68,8 +68,14 @@ jobs:
       - name: Typecheck
         run: pnpm typecheck
 
-      - name: Test
-        run: pnpm test
+      - name: Test with coverage thresholds
+        run: pnpm coverage
+
+      - name: Install Chromium
+        run: pnpm exec playwright install --with-deps chromium
+
+      - name: Test critical user flows
+        run: pnpm test:e2e
 
       - name: Build
         run: pnpm build

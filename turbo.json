@@ -1,11 +1,17 @@
 {
   "$schema": "https://turbo.build/schema.json",
+  "globalPassThroughEnv": ["PLAYWRIGHT_CHROMIUM_EXECUTABLE_PATH"],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
       "outputs": ["dist/**", ".next/**", "!.next/cache/**"]
     },
     "dev": { "cache": false, "persistent": true },
+    "coverage": {
+      "dependsOn": ["^build"],
+      "env": ["DATABASE_URL", "REDIS_URL"],
+      "outputs": ["coverage/**"]
+    },
     "test": { "dependsOn": ["^build"], "env": ["DATABASE_URL", "REDIS_URL"] },
     "typecheck": { "dependsOn": ["^typecheck"] }
   }

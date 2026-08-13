@@ -2,24 +2,14 @@ import { defineConfig } from 'vitest/config'
 
 export default defineConfig({
   test: {
-    include: ['test/**/*.test.ts'],
     environment: 'node',
     fileParallelism: false,
-    clearMocks: true,
-    restoreMocks: true,
-    passWithNoTests: false,
     coverage: {
       provider: 'v8',
       reporter: ['text', 'json-summary'],
       reportsDirectory: 'coverage',
       include: ['src/**/*.ts'],
-      exclude: [
-        'src/**/*.d.ts',
-        'src/**/index.ts',
-        'src/**/types.ts',
-        'src/**/repo/schema.ts',
-        'src/server.ts',
-      ],
+      exclude: ['src/**/*.d.ts', 'src/migrate-cli.ts'],
       thresholds: {
         statements: 80,
         branches: 75,

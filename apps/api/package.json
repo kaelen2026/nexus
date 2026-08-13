@@ -4,6 +4,7 @@
   "type": "module",
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "coverage": "vitest run --coverage",
     "dev": "NODE_ENV=development tsx watch --env-file-if-exists=../../.env src/server.ts",
     "test": "vitest run --passWithNoTests",
     "test:watch": "vitest",

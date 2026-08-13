@@ -7,6 +7,7 @@
   },
   "scripts": {
     "build": "tsc -p tsconfig.json",
+    "coverage": "vitest run --coverage",
     "db:migrate": "tsx src/migrate-cli.ts",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.test.json"
