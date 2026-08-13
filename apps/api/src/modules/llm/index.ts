@@ -1,4 +1,5 @@
 export { LlmAccessDeniedError, LlmProviderError } from './errors.js'
+export { createLocalDevelopmentLlmProvider } from './infra/providers/local-development.js'
 export type { LlmProvider } from './infra/providers/types.js'
 export { createLlmModule } from './module.js'
 export { createLlmRouter } from './router/routes.js'
