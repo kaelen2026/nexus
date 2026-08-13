@@ -31,6 +31,7 @@ describe('Auth runtime composition', () => {
         DATABASE_URL: databaseUrl,
         OTP_HASH_SECRET: 'test-secret-at-least-32-characters',
         REDIS_URL: redisUrl,
+        TOKEN_SECRET: 'test-token-secret-at-least-32-characters',
       },
       generateOtp: () => '123456',
       smsSender: { sendOtp: sendSms },
@@ -53,11 +54,28 @@ describe('Auth runtime composition', () => {
         body: JSON.stringify({ phoneNumber: '+8613800138000', otp: '123456' }),
       })
       expect(verifyResponse.status).toBe(200)
-      expect(await verifyResponse.json()).toEqual({
-        userId: expect.any(String),
-        accountId: expect.any(String),
-        sessionId: expect.any(String),
+      const tokenPair = await verifyResponse.json()
+      expect(tokenPair).toEqual({
+        tokenType: 'Bearer',
+        accessToken: expect.any(String),
+        accessTokenExpiresAt: expect.any(String),
+        refreshToken: expect.any(String),
       })
+
+      const refreshResponse = await runtime.app.request('/auth/refresh', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ refreshToken: tokenPair.refreshToken }),
+      })
+      expect(refreshResponse.status).toBe(200)
+      const refreshedTokenPair = await refreshResponse.json()
+      expect(refreshedTokenPair).toEqual({
+        tokenType: 'Bearer',
+        accessToken: expect.any(String),
+        accessTokenExpiresAt: expect.any(String),
+        refreshToken: expect.any(String),
+      })
+      expect(refreshedTokenPair.refreshToken).not.toBe(tokenPair.refreshToken)
 
       const replayResponse = await runtime.app.request('/auth/otp/verify', {
         method: 'POST',

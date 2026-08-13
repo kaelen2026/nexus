@@ -50,7 +50,13 @@ export async function rotateRefreshToken(
 
     if (rotated) {
       const [session] = await transaction
-        .select({ revokedAt: authSessions.revokedAt, expiresAt: authSessions.expiresAt })
+        .select({
+          userId: authSessions.userId,
+          accountId: authSessions.accountId,
+          sessionId: authSessions.id,
+          revokedAt: authSessions.revokedAt,
+          expiresAt: authSessions.expiresAt,
+        })
         .from(authSessions)
         .where(eq(authSessions.id, rotated.sessionId))
         .limit(1)
@@ -62,7 +68,7 @@ export async function rotateRefreshToken(
         tokenHash: nextHash,
         expiresAt: input.expiresAt,
       })
-      return { status: 'rotated' as const }
+      return { status: 'rotated' as const, identity: session }
     }
 
     const [existing] = await transaction
@@ -85,5 +91,5 @@ export async function rotateRefreshToken(
 
   if (result.status === 'reuse') throw new RefreshTokenReuseError()
   if (result.status === 'invalid') throw new InvalidRefreshTokenError()
-  return { refreshToken: nextRefreshToken }
+  return { refreshToken: nextRefreshToken, identity: result.identity }
 }

@@ -8,3 +8,7 @@ export const verifyOtpBodySchema = z.object({
   phoneNumber: z.string().trim().min(8).max(32),
   otp: z.string().regex(/^\d{6}$/),
 })
+
+export const refreshBodySchema = z.object({
+  refreshToken: z.string().min(32),
+})

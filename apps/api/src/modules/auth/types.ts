@@ -19,7 +19,13 @@ export interface Clock {
 
 export type SendOtp = (input: { phoneNumber: string }) => Promise<{ expiresAt: Date }>
 
-export type VerifyPhoneOtp = (input: {
-  phoneNumber: string
-  otp: string
-}) => Promise<{ userId: string; accountId: string; sessionId: string }>
+export type VerifyPhoneOtp = (input: { phoneNumber: string; otp: string }) => Promise<AuthTokenPair>
+
+export interface AuthTokenPair {
+  tokenType: 'Bearer'
+  accessToken: string
+  accessTokenExpiresAt: Date
+  refreshToken: string
+}
+
+export type RefreshSession = (input: { refreshToken: string }) => Promise<AuthTokenPair>

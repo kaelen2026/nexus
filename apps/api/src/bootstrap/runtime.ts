@@ -8,6 +8,7 @@ const runtimeEnvironmentSchema = z.object({
   DATABASE_URL: z.url(),
   OTP_HASH_SECRET: z.string().min(32),
   REDIS_URL: z.url(),
+  TOKEN_SECRET: z.string().min(32),
 })
 
 interface CreateApiRuntimeOptions {
@@ -29,12 +30,17 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
       otpHashSecret: environment.OTP_HASH_SECRET,
       redisUrl: environment.REDIS_URL,
       smsSender: options.smsSender,
+      tokenSecret: environment.TOKEN_SECRET,
     })
   } catch (error) {
     await database.close()
     throw error
   }
-  const app = createApp({ sendOtp: auth.sendOtp, verifyPhoneOtp: auth.verifyPhoneOtp })
+  const app = createApp({
+    sendOtp: auth.sendOtp,
+    verifyPhoneOtp: auth.verifyPhoneOtp,
+    refreshSession: auth.refreshSession,
+  })
 
   return {
     app,
