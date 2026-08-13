@@ -19,6 +19,7 @@ function wrapper({ children }: { children: ReactNode }) {
 function createApi(getCurrentUser: NexusApi['getCurrentUser']): NexusApi {
   return {
     getCurrentUser,
+    generate: vi.fn(),
     logout: vi.fn(),
     logoutAll: vi.fn(),
   }
@@ -37,10 +38,10 @@ describe('CurrentUserHome', () => {
     render(<CurrentUserHome api={api} />, { wrapper })
 
     expect(screen.getByText('正在读取账户')).toBeInTheDocument()
-    expect(await screen.findByRole('heading', { name: '欢迎回来' })).toBeInTheDocument()
+    expect(await screen.findByRole('heading', { name: '和 Nexus 一起创作' })).toBeInTheDocument()
     expect(screen.getByText('user-id')).toBeInTheDocument()
     expect(screen.getByText('正常')).toBeInTheDocument()
-    expect(screen.getByText('2026-08-13 00:00 UTC')).toBeInTheDocument()
+    expect(screen.getByText('账户状态')).toBeInTheDocument()
   })
 
   it('redirects to login after refresh cannot restore the session', async () => {
@@ -51,7 +52,7 @@ describe('CurrentUserHome', () => {
     render(<CurrentUserHome api={api} navigate={navigate} />, { wrapper })
 
     await waitFor(() => expect(navigate).toHaveBeenCalledWith('/login'))
-    expect(screen.queryByRole('heading', { name: '欢迎回来' })).not.toBeInTheDocument()
+    expect(screen.queryByRole('heading', { name: '和 Nexus 一起创作' })).not.toBeInTheDocument()
   })
 
   it('shows a suspended account state without redirecting', async () => {

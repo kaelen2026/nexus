@@ -98,6 +98,38 @@ describe('apiClient', () => {
     )
   })
 
+  it('generates text with the authenticated cookie session', async () => {
+    const result = {
+      requestId: 'request-id',
+      model: 'standard' as const,
+      text: '整理后的发布检查清单',
+      usage: { inputTokens: 8, outputTokens: 21, totalTokens: 29 },
+    }
+    const fetchMock = vi.fn().mockResolvedValue(jsonResponse(result))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await expect(
+      createApiClient().generate({
+        model: 'standard',
+        prompt: '整理发布检查清单',
+        maxTokens: 1_000,
+      }),
+    ).resolves.toEqual(result)
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/llm/generate',
+      expect.objectContaining({
+        method: 'POST',
+        credentials: 'include',
+        body: JSON.stringify({
+          model: 'standard',
+          prompt: '整理发布检查清单',
+          maxTokens: 1_000,
+        }),
+      }),
+    )
+  })
+
   it.each([
     ['logout', '/auth/logout'],
     ['logoutAll', '/auth/logout-all'],

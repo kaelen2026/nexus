@@ -42,7 +42,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Billing usage reservation and LLM generate service | done | PR #27 |
 | LLM generate HTTP endpoint | done | PR #28 |
 | Durable LLM request records | done | PR #31 |
-| Runtime composition and fake provider wiring | in progress | Current feature PR |
+| Runtime composition and fake provider wiring | done | PR #33 |
+| Web phone OTP and authenticated session UI | done | PRs #29, #30, and #32 |
+| Web LLM Generate workspace | in progress | Current feature PR |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.

@@ -1,7 +1,14 @@
 'use client'
 
 import { useQueryClient } from '@tanstack/react-query'
-import { ChevronDownIcon, LoaderCircleIcon, LogOutIcon, MonitorXIcon, XIcon } from 'lucide-react'
+import {
+  ChevronDownIcon,
+  LoaderCircleIcon,
+  LogOutIcon,
+  MonitorXIcon,
+  UserRoundIcon,
+  XIcon,
+} from 'lucide-react'
 import { useState } from 'react'
 import { createPortal } from 'react-dom'
 
@@ -53,6 +60,7 @@ export function SessionActions({
         onClick={() => setIsMenuOpen((open) => !open)}
         className="flex h-10 items-center gap-2 rounded-lg border bg-background px-3 text-sm font-medium outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/20"
       >
+        <UserRoundIcon className="size-4 text-muted-foreground" aria-hidden="true" />
         账户菜单
         <ChevronDownIcon className="size-4 text-muted-foreground" aria-hidden="true" />
       </button>

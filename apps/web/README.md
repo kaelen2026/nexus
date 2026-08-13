@@ -1,7 +1,7 @@
 # Nexus Web
 
-Next.js frontend for Nexus. The first vertical slice supports phone OTP authentication with
-HttpOnly cookie sessions.
+Next.js frontend for Nexus. The first vertical slice supports phone OTP authentication,
+HttpOnly cookie sessions, and authenticated LLM generation.
 
 ## Local development
 
@@ -22,6 +22,10 @@ access and refresh token plaintext. Protected API requests that receive `401` sh
 cookie refresh request and retry once; an unrecoverable session returns the user to `/login`.
 The account menu can revoke the current Session or every Session owned by the User. Successful
 logout clears client query state before navigation; failed logout remains retryable in place.
+
+The authenticated workspace calls `POST /llm/generate` with the logical `standard` model and a
+user-selected output limit. It renders normalized token usage, supports copying the response,
+and maps entitlement, provider, validation, and expired-session failures to stable UI states.
 
 ## Quality checks
 

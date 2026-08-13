@@ -1,12 +1,13 @@
 'use client'
 
 import { useQuery } from '@tanstack/react-query'
-import { AlertTriangleIcon, LoaderCircleIcon, SparklesIcon } from 'lucide-react'
+import { AlertTriangleIcon, LoaderCircleIcon, ShieldCheckIcon, UserRoundIcon } from 'lucide-react'
 import { useEffect } from 'react'
 
 import { NexusMark } from '@/components/nexus-brand'
 import { Button } from '@/components/ui/button'
 import { SessionActions } from '@/features/auth/session-actions'
+import { GenerateWorkspace } from '@/features/llm/generate-workspace'
 import { ApiError, apiClient, type NexusApi } from '@/lib/api-client'
 
 const defaultNavigate = (path: string) => window.location.assign(path)
@@ -69,64 +70,49 @@ export function CurrentUserHome({
 
   const user = userQuery.data
   return (
-    <main className="min-h-screen bg-[#f7f9ff]">
-      <header className="border-b bg-background/90 px-6 py-5 backdrop-blur sm:px-10">
-        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+    <main className="flex min-h-screen flex-col bg-[#f7f9ff]">
+      <header className="border-b bg-background/95 px-6 backdrop-blur sm:px-10">
+        <div className="mx-auto flex h-[5.75rem] max-w-[91rem] items-center justify-between gap-4">
           <div className="flex items-center gap-3">
             <NexusMark />
             <span className="text-xl font-semibold tracking-[-0.03em]">Nexus</span>
           </div>
+          <div className="hidden h-full items-center sm:flex">
+            <span className="flex h-full items-center border-b-[3px] border-primary px-5 text-sm font-semibold text-primary">
+              生成
+            </span>
+          </div>
           <SessionActions api={api} navigate={navigate} />
         </div>
       </header>
-      <div className="mx-auto max-w-6xl px-6 py-14 sm:px-10 sm:py-20">
-        <section className="max-w-2xl">
-          <div className="flex size-12 items-center justify-center rounded-xl bg-primary text-primary-foreground">
-            <SparklesIcon className="size-5" aria-hidden="true" />
-          </div>
-          <h1 className="mt-7 text-4xl font-semibold tracking-[-0.045em] sm:text-5xl">欢迎回来</h1>
-          <p className="mt-4 text-lg text-muted-foreground">你的 Nexus 账户已准备就绪。</p>
-        </section>
-
-        <section aria-labelledby="account-heading" className="mt-14 max-w-3xl border-t pt-8">
-          <h2 id="account-heading" className="text-sm font-medium text-muted-foreground">
-            账户信息
-          </h2>
-          <dl className="mt-6 grid gap-x-12 gap-y-7 sm:grid-cols-2">
-            <UserField label="用户 ID" value={user.id} mono />
-            <UserField label="状态" value={user.status === 'active' ? '正常' : user.status} />
-            <UserField label="创建时间" value={formatUtcDate(user.createdAt)} />
-            <UserField label="更新时间" value={formatUtcDate(user.updatedAt)} />
-          </dl>
-        </section>
-      </div>
+      <GenerateWorkspace api={api} navigate={navigate} />
+      <section aria-label="账户信息" className="mt-auto border-t bg-background px-6 sm:px-10">
+        <dl className="mx-auto flex min-h-24 max-w-[91rem] flex-col gap-5 py-5 sm:flex-row sm:items-center sm:gap-10 sm:py-0">
+          <AccountField icon={ShieldCheckIcon} label="账户状态" value="正常" />
+          <div className="hidden h-10 w-px bg-border sm:block" aria-hidden="true" />
+          <AccountField icon={UserRoundIcon} label="用户 ID" value={user.id} mono />
+        </dl>
+      </section>
     </main>
   )
 }
 
-function UserField({
+function AccountField({
+  icon: Icon,
   label,
   value,
   mono = false,
 }: {
+  icon: typeof ShieldCheckIcon
   label: string
   value: string
   mono?: boolean
 }) {
   return (
-    <div>
+    <div className="flex items-center gap-3">
+      <Icon className="size-5 text-muted-foreground" aria-hidden="true" />
       <dt className="text-sm text-muted-foreground">{label}</dt>
-      <dd className={`mt-2 text-base font-medium ${mono ? 'font-mono text-sm' : ''}`}>{value}</dd>
+      <dd className={`text-sm font-medium ${mono ? 'font-mono' : 'text-emerald-600'}`}>{value}</dd>
     </div>
   )
-}
-
-function formatUtcDate(value: string): string {
-  const date = new Date(value)
-  const year = date.getUTCFullYear()
-  const month = String(date.getUTCMonth() + 1).padStart(2, '0')
-  const day = String(date.getUTCDate()).padStart(2, '0')
-  const hours = String(date.getUTCHours()).padStart(2, '0')
-  const minutes = String(date.getUTCMinutes()).padStart(2, '0')
-  return `${year}-${month}-${day} ${hours}:${minutes} UTC`
 }

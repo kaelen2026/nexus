@@ -19,6 +19,7 @@ function renderActions(api: NexusApi, navigate = vi.fn()) {
 function createApi(overrides: Partial<NexusApi> = {}): NexusApi {
   return {
     getCurrentUser: vi.fn(),
+    generate: vi.fn(),
     logout: vi.fn().mockResolvedValue(undefined),
     logoutAll: vi.fn().mockResolvedValue(undefined),
     ...overrides,
