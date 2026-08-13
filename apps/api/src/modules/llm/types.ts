@@ -17,6 +17,7 @@ export interface GenerateInput {
 }
 
 export interface GenerateResult {
+  requestId: string
   model: 'standard'
   text: string
   usage: { inputTokens: number; outputTokens: number; totalTokens: number }

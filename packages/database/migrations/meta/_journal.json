@@ -43,6 +43,13 @@
       "when": 1786598917632,
       "tag": "0005_kind_paper_doll",
       "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1786600882776,
+      "tag": "0006_equal_chronomancer",
+      "breakpoints": true
     }
   ]
 }

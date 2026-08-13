@@ -29,7 +29,7 @@ describe('database', () => {
           'users', 'auth_accounts', 'auth_sessions',
           'billing_plans', 'billing_plan_entitlements', 'billing_plan_quotas',
           'billing_subscriptions', 'billing_event_receipts',
-          'billing_usage_records', 'billing_usage_reservations'
+          'billing_usage_records', 'billing_usage_reservations', 'llm_requests'
         )
       order by table_name
     `)
@@ -44,6 +44,7 @@ describe('database', () => {
       'billing_subscriptions',
       'billing_usage_records',
       'billing_usage_reservations',
+      'llm_requests',
       'users',
     ])
 
