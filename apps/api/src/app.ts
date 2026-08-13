@@ -25,7 +25,14 @@ import {
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
 import { createLlmRouter, type Generate } from './modules/llm/index.js'
-import { createUsersRouter, type GetCurrentUser } from './modules/users/index.js'
+import {
+  createUsersRouter,
+  type GetCurrentUser,
+  type GetProfile,
+  type GetSettings,
+  type UpdateProfile,
+  type UpdateSettings,
+} from './modules/users/index.js'
 
 interface AppDependencies {
   authenticateAccessToken?: AuthenticateAccessToken
@@ -40,6 +47,10 @@ interface AppDependencies {
   loginWithEmailPassword?: LoginWithEmailPassword
   resetEmailPassword?: ResetEmailPassword
   getCurrentUser?: GetCurrentUser
+  getProfile?: GetProfile
+  updateProfile?: UpdateProfile
+  getSettings?: GetSettings
+  updateSettings?: UpdateSettings
   generate?: Generate
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
@@ -88,7 +99,16 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     app.route('/auth', createAuthRouter(dependencies))
   }
   if (dependencies.getCurrentUser) {
-    app.route('/users', createUsersRouter({ getCurrentUser: dependencies.getCurrentUser }))
+    app.route(
+      '/users',
+      createUsersRouter({
+        getCurrentUser: dependencies.getCurrentUser,
+        ...(dependencies.getProfile ? { getProfile: dependencies.getProfile } : {}),
+        ...(dependencies.updateProfile ? { updateProfile: dependencies.updateProfile } : {}),
+        ...(dependencies.getSettings ? { getSettings: dependencies.getSettings } : {}),
+        ...(dependencies.updateSettings ? { updateSettings: dependencies.updateSettings } : {}),
+      }),
+    )
   }
   if (dependencies.generate) {
     app.route('/llm', createLlmRouter({ generate: dependencies.generate }))
