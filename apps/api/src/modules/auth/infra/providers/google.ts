@@ -48,7 +48,12 @@ export function createGoogleOAuthProvider(options: {
         audience: options.clientId,
       })
       if (!payload.sub || payload.nonce !== nonce) throw new Error('Invalid Google identity')
-      return { providerSubject: payload.sub }
+      return {
+        providerSubject: payload.sub,
+        ...(payload.email_verified === true && typeof payload.email === 'string'
+          ? { verifiedEmail: payload.email }
+          : {}),
+      }
     },
   }
 }

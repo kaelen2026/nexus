@@ -212,6 +212,9 @@ export async function createAuthModule(options: AuthModuleOptions) {
         {
           provider: input.provider,
           providerSubject: providerIdentity.providerSubject,
+          ...(providerIdentity.verifiedEmail
+            ? { verifiedEmail: providerIdentity.verifiedEmail }
+            : {}),
           sessionExpiresAt,
         },
         {

@@ -83,6 +83,7 @@ export interface OAuthProvider {
   createAuthorizationUrl(input: { state: string; nonce: string; codeChallenge: string }): URL
   exchangeCode(input: { code: string; nonce: string; codeVerifier: string }): Promise<{
     providerSubject: string
+    verifiedEmail?: string
   }>
 }
 

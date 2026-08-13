@@ -61,7 +61,13 @@ export function createAppleOAuthProvider(options: {
         audience: options.clientId,
       })
       if (!payload.sub || payload.nonce !== nonce) throw new Error('Invalid Apple identity')
-      return { providerSubject: payload.sub }
+      const emailVerified = payload.email_verified === true || payload.email_verified === 'true'
+      return {
+        providerSubject: payload.sub,
+        ...(emailVerified && typeof payload.email === 'string'
+          ? { verifiedEmail: payload.email }
+          : {}),
+      }
     },
   }
 }
