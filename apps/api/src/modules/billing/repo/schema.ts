@@ -12,6 +12,11 @@ import {
 } from 'drizzle-orm/pg-core'
 
 export const billingSubscriptionStatus = pgEnum('billing_subscription_status', ['active', 'ended'])
+export const billingUsageReservationStatus = pgEnum('billing_usage_reservation_status', [
+  'reserved',
+  'committed',
+  'released',
+])
 
 export const billingPlans = pgTable('billing_plans', {
   id: uuid().defaultRandom().primaryKey(),
@@ -67,3 +72,40 @@ export const billingEventReceipts = pgTable('billing_event_receipts', {
   eventType: text('event_type').notNull(),
   processedAt: timestamp('processed_at', { withTimezone: true }).notNull().defaultNow(),
 })
+
+export const billingUsageReservations = pgTable(
+  'billing_usage_reservations',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    userId: uuid('user_id').notNull(),
+    key: text().notNull(),
+    reservedUnits: integer('reserved_units').notNull(),
+    actualUnits: integer('actual_units'),
+    status: billingUsageReservationStatus().notNull().default('reserved'),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    finalizedAt: timestamp('finalized_at', { withTimezone: true }),
+  },
+  (table) => [
+    check('billing_usage_reservations_reserved_units_positive', sql`${table.reservedUnits} > 0`),
+    check(
+      'billing_usage_reservations_actual_units_non_negative',
+      sql`${table.actualUnits} is null or ${table.actualUnits} >= 0`,
+    ),
+  ],
+)
+
+export const billingUsageRecords = pgTable(
+  'billing_usage_records',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    reservationId: uuid('reservation_id')
+      .notNull()
+      .references(() => billingUsageReservations.id)
+      .unique(),
+    userId: uuid('user_id').notNull(),
+    key: text().notNull(),
+    units: integer().notNull(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+  },
+  (table) => [check('billing_usage_records_units_non_negative', sql`${table.units} >= 0`)],
+)

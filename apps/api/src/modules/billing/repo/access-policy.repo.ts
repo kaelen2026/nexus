@@ -1,4 +1,4 @@
-import type { DatabaseClient } from '@nexus/database'
+import type { DatabaseClient, DatabaseTransaction } from '@nexus/database'
 import { and, eq } from 'drizzle-orm'
 
 import { billingPlanEntitlements, billingPlanQuotas, billingSubscriptions } from './schema.js'
@@ -26,7 +26,7 @@ export async function findActiveEntitlement(
 }
 
 export async function findActiveQuotaLimit(
-  database: DatabaseClient,
+  database: DatabaseClient | DatabaseTransaction,
   input: { userId: string; key: string },
 ): Promise<number | null> {
   const [quota] = await database
