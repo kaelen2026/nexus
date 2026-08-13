@@ -28,6 +28,19 @@ function createAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
 describe('PhoneOtpLogin', () => {
   afterEach(() => vi.useRealTimers())
 
+  it('offers Google and Apple authentication', () => {
+    render(<PhoneOtpLogin api={createAuthApi()} oauthBaseUrl="https://api.nexus.test" />)
+
+    expect(screen.getByRole('link', { name: '使用 Google 登录' })).toHaveAttribute(
+      'href',
+      'https://api.nexus.test/auth/oauth/google',
+    )
+    expect(screen.getByRole('link', { name: '使用 Apple 登录' })).toHaveAttribute(
+      'href',
+      'https://api.nexus.test/auth/oauth/apple',
+    )
+  })
+
   it('rejects an invalid phone number without sending a request', async () => {
     const api = createAuthApi()
     render(<PhoneOtpLogin api={api} />)

@@ -1,20 +1,25 @@
-import { Hono } from 'hono'
+import { type Context, Hono } from 'hono'
 
 import type { GatewayEnvironment } from '../../../gateway/index.js'
 import {
   InvalidCredentialsError,
+  InvalidOAuthCallbackError,
   InvalidOtpError,
   InvalidRefreshTokenError,
+  OAuthProviderUnavailableError,
   RefreshTokenReuseError,
 } from '../errors.js'
 import type {
+  CompleteOAuth,
   LoginWithEmailPassword,
   Logout,
   LogoutAll,
+  OAuthProviderId,
   RefreshSession,
   ResetEmailPassword,
   SendEmailOtp,
   SendOtp,
+  StartOAuth,
   VerifyEmailOtp,
   VerifyPhoneOtp,
 } from '../types.js'
@@ -42,6 +47,9 @@ export function createAuthRouter(options: {
   refreshSession?: RefreshSession
   logout?: Logout
   logoutAll?: LogoutAll
+  startOAuth?: StartOAuth
+  completeOAuth?: CompleteOAuth
+  authWebUrl?: string
   loginWithEmailPassword?: LoginWithEmailPassword
   resetEmailPassword?: ResetEmailPassword
 }): Hono<GatewayEnvironment> {
@@ -150,6 +158,54 @@ export function createAuthRouter(options: {
         throw error
       }
     })
+
+  const parseProvider = (value: string | undefined): OAuthProviderId | undefined =>
+    value === 'google' || value === 'apple' ? value : undefined
+
+  if (options.startOAuth)
+    router.get('/oauth/:provider', async (context) => {
+      const provider = parseProvider(context.req.param('provider'))
+      if (!provider) return context.notFound()
+      try {
+        const authorizationUrl = await options.startOAuth?.({ provider })
+        if (!authorizationUrl) throw new Error('OAuth is not configured')
+        return context.redirect(authorizationUrl)
+      } catch (error) {
+        if (error instanceof OAuthProviderUnavailableError) return context.notFound()
+        throw error
+      }
+    })
+
+  async function oauthCallback(context: Context<GatewayEnvironment>) {
+    const provider = parseProvider(context.req.param('provider'))
+    const completeOAuth = options.completeOAuth
+    const authWebUrl = options.authWebUrl
+    if (!provider || !completeOAuth || !authWebUrl) return context.notFound()
+    const input: Record<string, unknown> =
+      context.req.method === 'POST'
+        ? ((await context.req.parseBody().catch(() => ({}))) as Record<string, unknown>)
+        : context.req.query()
+    const code = typeof input.code === 'string' ? input.code : undefined
+    const state = typeof input.state === 'string' ? input.state : undefined
+    if (!code || !state || input.error) {
+      return context.redirect(`${authWebUrl}/login?error=oauth_failed`)
+    }
+    try {
+      const tokenPair = await completeOAuth({ provider, code, state })
+      setAuthCookies(context, tokenPair)
+      return context.redirect(`${authWebUrl}/`)
+    } catch (error) {
+      if (error instanceof InvalidOAuthCallbackError) {
+        return context.redirect(`${authWebUrl}/login?error=oauth_failed`)
+      }
+      throw error
+    }
+  }
+
+  if (options.completeOAuth) {
+    router.get('/oauth/:provider/callback', oauthCallback)
+    router.post('/oauth/:provider/callback', oauthCallback)
+  }
 
   if (options.sendOtp)
     router.post('/otp/send', async (context) => {

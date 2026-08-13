@@ -1,7 +1,12 @@
 import { index, pgEnum, pgTable, text, timestamp, unique, uuid } from 'drizzle-orm/pg-core'
 
 export const authAccountStatus = pgEnum('auth_account_status', ['active', 'disabled'])
-export const authAccountProvider = pgEnum('auth_account_provider', ['phone', 'email'])
+export const authAccountProvider = pgEnum('auth_account_provider', [
+  'phone',
+  'email',
+  'google',
+  'apple',
+])
 
 export const authAccounts = pgTable(
   'auth_accounts',

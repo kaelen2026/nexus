@@ -25,11 +25,15 @@ function maskPhoneNumber(phoneNumber: string): string {
 interface PhoneOtpLoginProps {
   api?: AuthApi
   onAuthenticated?: () => void
+  oauthBaseUrl?: string
+  initialError?: string
 }
 
 export function PhoneOtpLogin({
   api = authApi,
   onAuthenticated = () => window.location.assign('/'),
+  oauthBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000',
+  initialError,
 }: PhoneOtpLoginProps) {
   const [step, setStep] = useState<'credential' | 'otp' | 'password-reset'>('credential')
   const [method, setMethod] = useState<'phone' | 'email'>('phone')
@@ -38,7 +42,7 @@ export function PhoneOtpLogin({
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [password, setPassword] = useState('')
-  const [error, setError] = useState<string>()
+  const [error, setError] = useState<string | undefined>(initialError)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [otpExpiresAt, setOtpExpiresAt] = useState<number>()
   const [resendSeconds, setResendSeconds] = useState(0)
@@ -311,6 +315,25 @@ export function PhoneOtpLogin({
                 ? '登录'
                 : '获取验证码'}
           </Button>
+          <div className="my-7 flex items-center gap-4 text-xs text-muted-foreground">
+            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+            或
+            <span className="h-px flex-1 bg-border" aria-hidden="true" />
+          </div>
+          <div className="grid gap-3 sm:grid-cols-2">
+            <a
+              href={`${oauthBaseUrl}/auth/oauth/google`}
+              className="flex h-12 items-center justify-center rounded-[0.7rem] border bg-background text-sm font-medium transition-colors hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/15"
+            >
+              使用 Google 登录
+            </a>
+            <a
+              href={`${oauthBaseUrl}/auth/oauth/apple`}
+              className="flex h-12 items-center justify-center rounded-[0.7rem] border bg-foreground text-sm font-medium text-background transition-opacity hover:opacity-85 focus-visible:ring-3 focus-visible:ring-primary/15"
+            >
+              使用 Apple 登录
+            </a>
+          </div>
           <AuthError message={error} />
         </form>
       ) : step === 'otp' ? (

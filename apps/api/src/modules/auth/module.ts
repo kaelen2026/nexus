@@ -3,20 +3,29 @@ import type { DatabaseClient } from '@nexus/database'
 import { createOtpHasher, generateOtp as generateSecureOtp } from './infra/otp.js'
 import { createPasswordService } from './infra/password.js'
 import { createAuthRedis } from './infra/redis.js'
+import { createRedisOAuthFlowStore } from './infra/redis-oauth-flow-store.js'
 import { createRedisOtpChallengeStore } from './infra/redis-otp-challenge-store.js'
 import { createAccessTokenService } from './infra/token.js'
 import { authenticate } from './service/authenticate.js'
 import { completeEmailAuthentication } from './service/complete-email-authentication.js'
 import { completePhoneAuthentication } from './service/complete-phone-authentication.js'
 import { createEmailIdentity } from './service/create-email-identity.js'
+import { createOAuthIdentity } from './service/create-oauth-identity.js'
 import { createPhoneIdentity } from './service/create-phone-identity.js'
 import { createSendEmailOtp, createVerifyEmailOtp } from './service/email-otp.js'
 import { createEmailPasswordLogin, createResetEmailPassword } from './service/email-password.js'
 import { revokeAllSessions, revokeSession } from './service/logout.js'
+import { createOAuthService } from './service/oauth.js'
 import { createRefreshSession, rotateRefreshToken } from './service/refresh-token.js'
 import { createSendOtp } from './service/send-otp.js'
 import { createVerifyOtp } from './service/verify-otp.js'
-import type { AuthTokenPair, EmailSender, SmsSender } from './types.js'
+import type {
+  AuthTokenPair,
+  EmailSender,
+  OAuthProvider,
+  OAuthProviderId,
+  SmsSender,
+} from './types.js'
 
 const accessTokenTtlSeconds = 15 * 60
 const sessionTtlMilliseconds = 30 * 24 * 60 * 60 * 1_000
@@ -31,6 +40,7 @@ interface AuthModuleOptions {
   emailSender?: EmailSender
   tokenSecret: string
   publishUserCreated?: (userId: string) => Promise<void>
+  oauthProviders?: OAuthProvider[]
 }
 
 export async function createAuthModule(options: AuthModuleOptions) {
@@ -42,6 +52,10 @@ export async function createAuthModule(options: AuthModuleOptions) {
   const emailChallengeStore = createRedisOtpChallengeStore({
     redis: redis.client,
     keyPrefix: 'auth:otp:email',
+  })
+  const oauth = createOAuthService({
+    flowStore: createRedisOAuthFlowStore(redis.client),
+    providers: options.oauthProviders ?? [],
   })
   const hashOtp = createOtpHasher(options.otpHashSecret)
   const verifyOtp = createVerifyOtp({ challengeStore, hashOtp })
@@ -186,6 +200,28 @@ export async function createAuthModule(options: AuthModuleOptions) {
         refreshToken: input.refreshToken,
         secret: options.tokenSecret,
         expiresAt: new Date(Date.now() + sessionTtlMilliseconds),
+      })
+      return issueTokenPair(identity, refreshToken)
+    },
+    startOAuth: (input: { provider: OAuthProviderId }) => oauth.start(input.provider),
+    completeOAuth: async (input: { provider: OAuthProviderId; code: string; state: string }) => {
+      const providerIdentity = await oauth.complete(input)
+      const sessionExpiresAt = new Date(Date.now() + sessionTtlMilliseconds)
+      const identity = await createOAuthIdentity(
+        options.database,
+        {
+          provider: input.provider,
+          providerSubject: providerIdentity.providerSubject,
+          sessionExpiresAt,
+        },
+        {
+          ...(options.publishUserCreated ? { publishUserCreated: options.publishUserCreated } : {}),
+        },
+      )
+      const { refreshToken } = await createRefreshSession(options.database, {
+        sessionId: identity.sessionId,
+        secret: options.tokenSecret,
+        expiresAt: sessionExpiresAt,
       })
       return issueTokenPair(identity, refreshToken)
     },

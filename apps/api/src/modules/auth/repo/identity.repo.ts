@@ -3,6 +3,8 @@ import { and, eq } from 'drizzle-orm'
 
 import { authAccounts, authSessions } from './schema.js'
 
+type OAuthProvider = 'google' | 'apple'
+
 export async function findPhoneAccount(transaction: DatabaseTransaction, phoneNumber: string) {
   return findAccount(transaction, 'phone', phoneNumber)
 }
@@ -36,6 +38,33 @@ export async function insertPhoneAccount(
 export async function insertAccount(
   transaction: DatabaseTransaction,
   input: { userId: string; provider: 'phone' | 'email'; providerSubject: string },
+) {
+  const [account] = await transaction
+    .insert(authAccounts)
+    .values(input)
+    .returning({ id: authAccounts.id })
+  if (!account) throw new Error('Failed to create Account')
+  return account
+}
+
+export async function findOAuthAccount(
+  transaction: DatabaseTransaction,
+  provider: OAuthProvider,
+  providerSubject: string,
+) {
+  const [account] = await transaction
+    .select({ id: authAccounts.id, userId: authAccounts.userId })
+    .from(authAccounts)
+    .where(
+      and(eq(authAccounts.provider, provider), eq(authAccounts.providerSubject, providerSubject)),
+    )
+    .limit(1)
+  return account
+}
+
+export async function insertOAuthAccount(
+  transaction: DatabaseTransaction,
+  input: { userId: string; provider: OAuthProvider; providerSubject: string },
 ) {
   const [account] = await transaction
     .insert(authAccounts)

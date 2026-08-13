@@ -8,7 +8,12 @@ export const metadata: Metadata = {
   description: '登录 Nexus',
 }
 
-export default function LoginPage() {
+export default async function LoginPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ error?: string }>
+}) {
+  const { error } = await searchParams
   return (
     <main className="grid min-h-screen lg:grid-cols-[minmax(20rem,0.52fr)_minmax(32rem,1fr)]">
       <aside className="relative hidden overflow-hidden border-r bg-[#f7f9ff] lg:flex lg:flex-col lg:justify-end lg:p-16 xl:p-20">
@@ -22,7 +27,9 @@ export default function LoginPage() {
         </div>
       </aside>
       <section className="flex min-h-screen items-center justify-center px-6 py-16 sm:px-10 lg:px-16">
-        <PhoneOtpLogin />
+        <PhoneOtpLogin
+          {...(error === 'oauth_failed' ? { initialError: '第三方登录失败，请重试' } : {})}
+        />
       </section>
     </main>
   )

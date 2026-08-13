@@ -8,6 +8,7 @@ import {
 } from './gateway/index.js'
 import {
   type AuthenticateAccessToken,
+  type CompleteOAuth,
   createAuthRouter,
   type LoginWithEmailPassword,
   type Logout,
@@ -16,6 +17,7 @@ import {
   type ResetEmailPassword,
   type SendEmailOtp,
   type SendOtp,
+  type StartOAuth,
   type VerifyEmailOtp,
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
@@ -36,6 +38,9 @@ interface AppDependencies {
   resetEmailPassword?: ResetEmailPassword
   getCurrentUser?: GetCurrentUser
   generate?: Generate
+  startOAuth?: StartOAuth
+  completeOAuth?: CompleteOAuth
+  authWebUrl?: string
 }
 
 export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvironment> {
@@ -61,7 +66,9 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     dependencies.verifyPhoneOtp ||
     dependencies.refreshSession ||
     dependencies.logout ||
-    dependencies.logoutAll
+    dependencies.logoutAll ||
+    dependencies.startOAuth ||
+    dependencies.completeOAuth
   ) {
     app.route('/auth', createAuthRouter(dependencies))
   }
