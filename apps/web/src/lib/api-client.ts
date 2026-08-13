@@ -19,10 +19,28 @@ const cookieSessionResponseSchema = z.object({
   accessTokenExpiresAt: z.iso.datetime(),
 })
 
+const generateResponseSchema = z.object({
+  requestId: z.string().min(1),
+  model: z.literal('standard'),
+  text: z.string(),
+  usage: z.object({
+    inputTokens: z.number().int().nonnegative(),
+    outputTokens: z.number().int().nonnegative(),
+    totalTokens: z.number().int().nonnegative(),
+  }),
+})
+
 export type CurrentUser = z.infer<typeof currentUserSchema>
+export type GenerateResult = z.infer<typeof generateResponseSchema>
+export interface GenerateInput {
+  model: 'standard'
+  prompt: string
+  maxTokens: number
+}
 
 export interface NexusApi {
   getCurrentUser(): Promise<CurrentUser>
+  generate(input: GenerateInput): Promise<GenerateResult>
   logout(): Promise<void>
   logoutAll(): Promise<void>
 }
@@ -31,6 +49,9 @@ const errorMessages: Record<string, string> = {
   UNAUTHENTICATED: '登录状态已失效',
   USER_SUSPENDED: '账户已暂停',
   USER_NOT_FOUND: '未找到用户',
+  INVALID_REQUEST: '请求内容无效，请检查后重试',
+  LLM_ACCESS_DENIED: '当前账户暂无可用的生成额度',
+  LLM_PROVIDER_ERROR: '生成服务暂时不可用，请稍后重试',
 }
 
 export class ApiError extends Error {
@@ -111,6 +132,12 @@ export function createApiClient(): NexusApi {
 
   return {
     getCurrentUser: () => request('/users/me', { schema: currentUserSchema }),
+    generate: (input) =>
+      request('/llm/generate', {
+        method: 'POST',
+        body: input,
+        schema: generateResponseSchema,
+      }),
     logout: () =>
       request('/auth/logout', {
         method: 'POST',
