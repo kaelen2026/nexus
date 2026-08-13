@@ -2,7 +2,7 @@ import { NexusMark, PhoneOtpLogin } from '@/features/auth/phone-otp-login'
 
 export default function LoginPage() {
   return (
-    <main className="grid min-h-screen lg:grid-cols-[minmax(20rem,0.72fr)_minmax(32rem,1fr)]">
+    <main className="grid min-h-screen lg:grid-cols-[minmax(20rem,0.52fr)_minmax(32rem,1fr)]">
       <aside className="relative hidden overflow-hidden border-r bg-[#f7f9ff] lg:flex lg:flex-col lg:justify-end lg:p-16 xl:p-20">
         <div className="auth-contours absolute inset-0 opacity-70" aria-hidden="true" />
         <div className="relative">

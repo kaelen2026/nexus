@@ -9,6 +9,7 @@ import { type AuthApi, authApi } from '@/lib/auth-api'
 
 const phoneSchema = z.string().trim().min(8).max(32)
 const otpSchema = z.string().regex(/^\d{6}$/)
+const otpSlots = ['one', 'two', 'three', 'four', 'five', 'six'] as const
 
 function maskPhoneNumber(phoneNumber: string): string {
   const digits = phoneNumber.replace(/\D/g, '')
@@ -153,20 +154,33 @@ export function PhoneOtpLogin({
           <label className="block text-sm font-medium" htmlFor="otp">
             6 位验证码
           </label>
-          <input
-            id="otp"
-            autoComplete="one-time-code"
-            inputMode="numeric"
-            maxLength={6}
-            value={otp}
-            onChange={(event) => {
-              setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
-              setError(undefined)
-            }}
-            aria-invalid={Boolean(error)}
-            aria-describedby={error ? 'auth-error' : undefined}
-            className="mt-3 h-16 w-full rounded-[0.7rem] border bg-background px-5 font-mono text-2xl tracking-[1.15em] outline-none transition-shadow focus:border-primary focus:ring-3 focus:ring-primary/15 aria-invalid:border-destructive"
-          />
+          <div className="relative mt-3 grid grid-cols-6 gap-2">
+            <input
+              id="otp"
+              autoComplete="one-time-code"
+              inputMode="numeric"
+              maxLength={6}
+              value={otp}
+              onChange={(event) => {
+                setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))
+                setError(undefined)
+              }}
+              aria-invalid={Boolean(error)}
+              aria-describedby={error ? 'auth-error' : undefined}
+              className="peer absolute inset-0 z-10 cursor-text opacity-0"
+            />
+            {otpSlots.map((slot, index) => (
+              <span
+                key={slot}
+                aria-hidden="true"
+                className={`flex h-14 items-center justify-center rounded-[0.7rem] border bg-background font-mono text-xl transition-shadow ${
+                  error ? 'border-destructive' : ''
+                } ${index === otp.length ? 'peer-focus:border-primary peer-focus:ring-3 peer-focus:ring-primary/15' : ''}`}
+              >
+                {otp[index] ?? ''}
+              </span>
+            ))}
+          </div>
 
           <Button
             type="submit"
