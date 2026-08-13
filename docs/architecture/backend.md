@@ -76,3 +76,35 @@ Correlate structured logs, metrics, traces, audit, and cost by relevant request,
 Architecture tests enforce imports, ownership, and an acyclic graph. Integration tests prefer real PostgreSQL and Redis and focused fakes for SMS, providers, time, and IDs.
 
 The first protected slice is `Phone OTP -> User + Account + Session -> Free Plan -> Access Token -> GET /users/me -> LLM Generate -> Entitlement + Quota -> Provider -> Usage`.
+
+## Detailed Specifications
+
+- [Auth module](../modules/auth.md)
+- [Users module](../modules/users.md)
+- [Billing module](../modules/billing.md)
+- [LLM module](../modules/llm.md)
+- [Event contracts](../contracts/events.md)
+- [First vertical-slice plan](../../.ai/plans/first-vertical-slice.md)
+
+## Shared Code and Package Boundaries
+
+`apps/api/src/shared` is restricted to capabilities without business semantics, initially events, IDs, and time. Business helpers such as `UserUtils`, `BillingHelpers`, or `LLMCommon` belong to their modules.
+
+`packages/*` exists for cross-application technical reuse such as API contracts, database connections, observability, and test utilities. Auth, Users, Billing, and LLM remain modules inside `apps/api`; they are not workspace packages.
+
+## Architecture Verification Matrix
+
+Executable architecture tests must eventually enforce all of the following:
+
+| Rule | Violation to reject |
+| --- | --- |
+| Router isolation | Router imports a repo, database client, Redis client, or module infra |
+| Service portability | Service imports Hono request/response/context types |
+| Public module boundary | A module deep-imports another module instead of its `index.ts` |
+| Private adapters | A module imports another module's `repo/*` or `infra/*` |
+| Table ownership | A repo imports or queries another module's schema |
+| Acyclic graph | Module dependency graph contains a cycle |
+
+## Deferred Architecture
+
+Do not introduce microservices, Kubernetes, a service mesh, Kafka, service discovery, repository interfaces for every repo, broad mapper/DTO layers, or speculative worker infrastructure. The in-memory event bus may evolve to a transactional outbox and external broker only when delivery requirements justify it.
