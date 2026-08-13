@@ -87,9 +87,11 @@ Provider Usage, Billing Usage, and Provider Cost remain distinct. LLM owns provi
 
 ## Events, Observability, and Verification
 
-Use direct service calls for results and events for facts. The current in-memory bus is synchronous
-and non-durable. Consumers should remain idempotent so a future transactional outbox and external
-broker can provide at-least-once delivery without changing business effects or contracts.
+Use direct service calls for results and events for facts. The current in-memory bus is synchronous.
+Users persists `users.user-created` in its transactional outbox and replays pending deliveries
+during startup, providing durable at-least-once delivery for that event without an external broker.
+Consumers remain idempotent because delivery and the published marker cannot be atomic across
+modules.
 
 Correlate structured logs, metrics, traces, audit, and cost by relevant request, correlation, event, LLM request, reservation, session, and user IDs. Never log passwords, OTPs, tokens, API keys, Authorization headers, provider secrets, or full prompts by default.
 
@@ -132,4 +134,7 @@ bootstrap restriction against importing the Redis SDK directly is automated:
 
 ## Deferred Architecture
 
-Do not introduce microservices, Kubernetes, a service mesh, Kafka, service discovery, repository interfaces for every repo, broad mapper/DTO layers, or speculative worker infrastructure. The in-memory event bus may evolve to a transactional outbox and external broker only when delivery requirements justify it.
+Do not introduce microservices, Kubernetes, a service mesh, Kafka, service discovery, repository
+interfaces for every repo, broad mapper/DTO layers, or speculative worker infrastructure. Add a
+generic outbox dispatcher or external broker only when delivery volume or additional event types
+justify evolving beyond the current Users-owned outbox.

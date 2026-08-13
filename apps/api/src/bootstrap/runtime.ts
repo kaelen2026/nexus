@@ -107,6 +107,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
 
   let auth: Awaited<ReturnType<typeof createAuthModule>>
   try {
+    await users.replayPendingEvents()
     auth = await createAuthModule({
       database: database.client,
       ...(options.emailSender ? { emailSender: options.emailSender } : {}),

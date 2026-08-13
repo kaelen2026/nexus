@@ -18,8 +18,9 @@ source and tests from target architecture described elsewhere.
 | Web workspace | Prompt entry, output limit, generation result, token usage, copy, stable error states | Vitest + Testing Library |
 | HTTP observability | Correlated structured logs, W3C trace propagation, server spans, Prometheus request metrics | Gateway tests |
 
-PostgreSQL schemas and seven committed migrations exist for Users, Auth, Billing, and LLM. Redis is
-used only for short-lived OTP challenges. The event bus is synchronous and in-memory; Billing's
+PostgreSQL schemas and eleven committed migrations exist for Users, Auth, Billing, and LLM. Redis is
+used only for short-lived OTP challenges. The event bus is synchronous and in-memory;
+`users.user-created` has a Users-owned transactional outbox with startup replay, and Billing's
 consumer protects its durable effect with event receipts and database uniqueness.
 
 ## Runtime gap
@@ -41,7 +42,7 @@ runnable.
 - Streaming generation, channel selection/fallback, provider pricing, and provider-cost accounting.
 - Password, API-key, account-linking, profile, and settings workflows.
 - Payment-provider integration and paid-plan management.
-- Transactional outbox or external event broker.
+- A generic outbox or external event broker beyond the current Users-owned outbox.
 - Rate limiting.
 - The full architecture rule suite. The current architecture test only guards bootstrap from a
   direct Redis SDK import; the remaining boundary rules are conventions awaiting executable tests.

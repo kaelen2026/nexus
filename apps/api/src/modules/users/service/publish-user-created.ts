@@ -1,17 +1,24 @@
-import { randomUUID } from 'node:crypto'
-
+import type { DatabaseClient } from '@nexus/database'
 import type { EventBus } from '../../../shared/events/index.js'
+import {
+  findPendingUserCreatedEvents,
+  markUserCreatedPublished,
+} from '../repo/user-created-outbox.repo.js'
 
 export function createUserCreatedPublisher(options: {
+  database: DatabaseClient
   eventBus: EventBus
-  generateEventId?: () => string
-  now?: () => Date
 }) {
-  return (userId: string) =>
-    options.eventBus.publish({
-      eventId: options.generateEventId?.() ?? randomUUID(),
-      type: 'users.user-created',
-      occurredAt: (options.now?.() ?? new Date()).toISOString(),
-      payload: { userId },
-    })
+  return async (userId?: string) => {
+    const events = await findPendingUserCreatedEvents(options.database, userId)
+    for (const event of events) {
+      await options.eventBus.publish({
+        eventId: event.eventId,
+        type: 'users.user-created',
+        occurredAt: event.occurredAt.toISOString(),
+        payload: { userId: event.userId },
+      })
+      await markUserCreatedPublished(options.database, event.eventId)
+    }
+  }
 }

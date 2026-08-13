@@ -49,7 +49,11 @@ Credential -> Auth Account -> Create User -> Bind Account -> Create Session
 
 After durable User creation, Users publishes `users.user-created`. Billing consumes the fact to assign a free subscription. Users must not call Billing, which avoids a Users/Billing dependency cycle.
 
-Users constructs and publishes the event only after the User/Account/Session transaction commits. Re-authentication of an existing Account does not republish `users.user-created`.
+Users writes `users.user-created` to its outbox in the same transaction that creates the User. After
+the User/Account/Session transaction commits, it immediately publishes pending events and marks each
+successful delivery. Failed deliveries remain pending and are replayed when the API runtime starts,
+while Billing's event receipt keeps repeated delivery idempotent. Re-authentication of an existing
+Account does not enqueue another `users.user-created` event.
 
 ## Public API
 
