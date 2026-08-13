@@ -1,0 +1,1 @@
+ALTER TABLE "billing_plan_quotas" ADD CONSTRAINT "billing_plan_quotas_limit_positive" CHECK ("billing_plan_quotas"."limit" > 0);
