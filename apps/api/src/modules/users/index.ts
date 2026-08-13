@@ -1,1 +1,5 @@
+export { UserNotFoundError, UserSuspendedError } from './errors.js'
+export { createUsersModule } from './module.js'
+export { createUsersRouter } from './router/routes.js'
 export { createUser } from './service/create-user.js'
+export type { GetCurrentUser, UserStatus, UserSummary } from './types.js'

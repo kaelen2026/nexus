@@ -13,6 +13,7 @@ import {
   type SendOtp,
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
+import { createUsersRouter, type GetCurrentUser } from './modules/users/index.js'
 
 interface AppDependencies {
   authenticateAccessToken?: AuthenticateAccessToken
@@ -20,6 +21,7 @@ interface AppDependencies {
   sendOtp?: SendOtp
   verifyPhoneOtp?: VerifyPhoneOtp
   refreshSession?: RefreshSession
+  getCurrentUser?: GetCurrentUser
 }
 
 export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvironment> {
@@ -38,6 +40,9 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
   app.get('/health', (context) => context.json({ status: 'ok' }))
   if (dependencies.sendOtp || dependencies.verifyPhoneOtp || dependencies.refreshSession) {
     app.route('/auth', createAuthRouter(dependencies))
+  }
+  if (dependencies.getCurrentUser) {
+    app.route('/users', createUsersRouter({ getCurrentUser: dependencies.getCurrentUser }))
   }
   return app
 }

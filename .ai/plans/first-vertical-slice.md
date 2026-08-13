@@ -34,8 +34,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Refresh token persistence, rotation, and reuse detection | done | PR #17 |
 | Issue tokens from verify and add refresh endpoint | done | PR #18 |
 | Web HttpOnly Cookie session transport | done | PR #19 |
-| Authentication gateway and Cookie Origin protection | in progress | Current feature PR |
-| Authenticated `GET /users/me` | next | Not started |
+| Authentication gateway and Cookie Origin protection | done | PR #20 |
+| Authenticated `GET /users/me` | in progress | Current feature PR |
+| Logout and logout-all session revocation | next | Not started |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.
