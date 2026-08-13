@@ -20,6 +20,8 @@ The web app listens on `http://localhost:3001` and expects the API at
 Authentication requests always use `credentials: "include"`. Browser code never reads or stores
 access and refresh token plaintext. Protected API requests that receive `401` share a single
 cookie refresh request and retry once; an unrecoverable session returns the user to `/login`.
+The account menu can revoke the current Session or every Session owned by the User. Successful
+logout clears client query state before navigation; failed logout remains retryable in place.
 
 ## Quality checks
 

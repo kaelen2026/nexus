@@ -65,4 +65,24 @@ describe('SessionActions', () => {
     expect(navigate).not.toHaveBeenCalled()
     expect(screen.getByRole('button', { name: '重试退出' })).toBeInTheDocument()
   })
+
+  it('closes the confirmation and retries logout-all after a failure', async () => {
+    const logoutAll = vi
+      .fn()
+      .mockRejectedValueOnce(new Error('请求失败，请稍后重试'))
+      .mockResolvedValueOnce(undefined)
+    const api = createApi({ logoutAll })
+    const { navigate } = renderActions(api)
+
+    fireEvent.click(screen.getByRole('button', { name: '账户菜单' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '退出所有设备' }))
+    fireEvent.click(screen.getByRole('button', { name: '确认退出所有设备' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('请求失败，请稍后重试')
+    expect(screen.queryByRole('dialog')).not.toBeInTheDocument()
+    fireEvent.click(screen.getByRole('button', { name: '重试退出' }))
+
+    await waitFor(() => expect(logoutAll).toHaveBeenCalledTimes(2))
+    expect(navigate).toHaveBeenCalledWith('/login')
+  })
 })

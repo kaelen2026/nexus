@@ -3,6 +3,7 @@
 import { useQueryClient } from '@tanstack/react-query'
 import { ChevronDownIcon, LoaderCircleIcon, LogOutIcon, MonitorXIcon, XIcon } from 'lucide-react'
 import { useState } from 'react'
+import { createPortal } from 'react-dom'
 
 import { Button } from '@/components/ui/button'
 import { apiClient, type NexusApi } from '@/lib/api-client'
@@ -26,6 +27,7 @@ export function SessionActions({
   const [error, setError] = useState<string>()
 
   async function logout(action: 'current' | 'all') {
+    setIsMenuOpen(false)
     setPendingAction(action)
     setFailedAction(undefined)
     setError(undefined)
@@ -34,6 +36,7 @@ export function SessionActions({
       queryClient.clear()
       navigate('/login')
     } catch (cause) {
+      if (action === 'all') setConfirmAll(false)
       setFailedAction(action)
       setError(cause instanceof Error ? cause.message : '退出失败，请稍后重试')
     } finally {
@@ -102,54 +105,57 @@ export function SessionActions({
         </div>
       ) : null}
 
-      {confirmAll ? (
-        <div className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/20 px-6 backdrop-blur-sm">
-          <section
-            role="dialog"
-            aria-modal="true"
-            aria-labelledby="logout-all-heading"
-            className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-xl sm:p-8"
-          >
-            <div className="flex items-start justify-between gap-4">
-              <div>
-                <h2 id="logout-all-heading" className="text-xl font-semibold tracking-tight">
-                  退出所有设备？
-                </h2>
-                <p className="mt-3 leading-6 text-muted-foreground">
-                  所有已登录设备都需要重新验证手机号。
-                </p>
-              </div>
-              <button
-                type="button"
-                aria-label="关闭"
-                onClick={() => setConfirmAll(false)}
-                className="rounded-md p-1 text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/20"
+      {confirmAll
+        ? createPortal(
+            <div className="fixed inset-0 z-30 flex items-center justify-center bg-foreground/20 px-6 backdrop-blur-sm">
+              <section
+                role="dialog"
+                aria-modal="true"
+                aria-labelledby="logout-all-heading"
+                className="w-full max-w-md rounded-2xl border bg-background p-6 shadow-xl sm:p-8"
               >
-                <XIcon className="size-5" aria-hidden="true" />
-              </button>
-            </div>
-            <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
-              <Button
-                variant="outline"
-                onClick={() => setConfirmAll(false)}
-                disabled={Boolean(pendingAction)}
-              >
-                取消
-              </Button>
-              <Button
-                variant="destructive"
-                onClick={() => logout('all')}
-                disabled={Boolean(pendingAction)}
-              >
-                {pendingAction === 'all' ? (
-                  <LoaderCircleIcon className="animate-spin" aria-hidden="true" />
-                ) : null}
-                {pendingAction === 'all' ? '正在退出' : '确认退出所有设备'}
-              </Button>
-            </div>
-          </section>
-        </div>
-      ) : null}
+                <div className="flex items-start justify-between gap-4">
+                  <div>
+                    <h2 id="logout-all-heading" className="text-xl font-semibold tracking-tight">
+                      退出所有设备？
+                    </h2>
+                    <p className="mt-3 leading-6 text-muted-foreground">
+                      所有已登录设备都需要重新验证手机号。
+                    </p>
+                  </div>
+                  <button
+                    type="button"
+                    aria-label="关闭"
+                    onClick={() => setConfirmAll(false)}
+                    className="rounded-md p-1 text-muted-foreground outline-none hover:bg-muted focus-visible:ring-3 focus-visible:ring-primary/20"
+                  >
+                    <XIcon className="size-5" aria-hidden="true" />
+                  </button>
+                </div>
+                <div className="mt-8 flex flex-col-reverse gap-3 sm:flex-row sm:justify-end">
+                  <Button
+                    variant="outline"
+                    onClick={() => setConfirmAll(false)}
+                    disabled={Boolean(pendingAction)}
+                  >
+                    取消
+                  </Button>
+                  <Button
+                    variant="destructive"
+                    onClick={() => logout('all')}
+                    disabled={Boolean(pendingAction)}
+                  >
+                    {pendingAction === 'all' ? (
+                      <LoaderCircleIcon className="animate-spin" aria-hidden="true" />
+                    ) : null}
+                    {pendingAction === 'all' ? '正在退出' : '确认退出所有设备'}
+                  </Button>
+                </div>
+              </section>
+            </div>,
+            document.body,
+          )
+        : null}
     </div>
   )
 }
