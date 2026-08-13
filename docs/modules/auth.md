@@ -73,6 +73,8 @@ Verify OTP
   -> issue access + refresh tokens
 ```
 
+OTP consumption happens before identity persistence. A rejected, expired, or already consumed OTP must not touch PostgreSQL. The HTTP boundary maps all of these cases to the same unauthorized response so it does not disclose challenge state.
+
 The same external Account cannot belong to multiple Users. Repeated authentication reuses the existing User and Account.
 
 ## Token Model
