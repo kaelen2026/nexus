@@ -1,0 +1,73 @@
+# LLM Module
+
+## Responsibility
+
+LLM owns model resolution, provider/channel selection, provider adapters, request records, normalized provider usage, pricing, and provider cost. Billing owns user quota and billable usage.
+
+## Intended Shape
+
+```text
+llm/
+├── router/
+│   ├── routes.ts
+│   └── schema.ts
+├── service/
+│   ├── generate.ts
+│   ├── stream.ts
+│   ├── model-resolver.ts
+│   └── channel-selector.ts
+├── repo/requests.repo.ts
+├── infra/
+│   ├── providers/
+│   │   ├── openai.ts
+│   │   ├── anthropic.ts
+│   │   └── gemini.ts
+│   ├── pricing/
+│   └── health/
+├── types.ts
+├── errors.ts
+└── index.ts
+```
+
+## Model and Provider Design
+
+Keep four concepts distinct:
+
+```text
+Logical Model -> Provider Model -> Provider -> Channel
+reasoning-pro     model-x          OpenAI      channel-us-1
+```
+
+Business code selects a logical model and does not bind directly to provider SDKs. Provider-specific request/response schemas stay in `infra/providers`.
+
+Adapters expose normalized `generate()` and `stream()` behavior. Normalized provider usage may include `inputTokens`, `outputTokens`, `cachedTokens`, and `reasoningTokens`.
+
+## Generate Flow
+
+```text
+Resolve Logical Model
+  -> Billing.getEntitlement
+  -> Billing.reserveUsage
+  -> Select Channel
+  -> Provider Adapter
+  -> Normalize Response and Provider Usage
+  -> Calculate Provider Cost and Billable Usage
+  -> Billing.commitUsage
+```
+
+Provider failure finalizes the request and releases the reservation.
+
+## Streaming
+
+Normalized events are `start`, `text_delta`, `tool_call_delta`, `usage`, `done`, and `error`.
+
+- Before the first emitted chunk, retry or provider fallback is allowed.
+- After the first emitted chunk, cross-provider fallback is disabled by default to avoid duplicated or inconsistent output.
+
+## Usage Boundaries
+
+- Provider Usage describes what the provider reports.
+- Billing Usage is expressed as token, request, or credit units.
+- Provider Cost is internal LLM cost.
+
+These values must not be conflated even when they are derived from the same response.
