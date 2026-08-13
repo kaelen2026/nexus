@@ -15,8 +15,8 @@ const geistMono = Geist_Mono({
 })
 
 export const metadata: Metadata = {
-  title: '登录 | Nexus',
-  description: '登录 Nexus',
+  title: 'Nexus',
+  description: 'Nexus web application',
 }
 
 export default function RootLayout({ children }: { children: ReactNode }) {

@@ -1,4 +1,12 @@
-import { NexusMark, PhoneOtpLogin } from '@/features/auth/phone-otp-login'
+import type { Metadata } from 'next'
+
+import { NexusMark } from '@/components/nexus-brand'
+import { PhoneOtpLogin } from '@/features/auth/phone-otp-login'
+
+export const metadata: Metadata = {
+  title: '登录 | Nexus',
+  description: '登录 Nexus',
+}
 
 export default function LoginPage() {
   return (
