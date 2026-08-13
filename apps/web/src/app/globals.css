@@ -83,6 +83,19 @@
   --sidebar-ring: oklch(0.708 0 0);
 }
 
+.auth-contours {
+  background-image:
+    repeating-radial-gradient(
+      ellipse at -12% 40%,
+      transparent 0 22px,
+      oklch(0.62 0.13 265 / 10%) 23px 24px
+    ),
+    radial-gradient(circle at 72% 18%, oklch(0.62 0.13 265 / 10%) 0 1px, transparent 1.5px);
+  background-size:
+    auto,
+    24px 24px;
+}
+
 .dark {
   --background: oklch(0.145 0 0);
   --foreground: oklch(0.985 0 0);
