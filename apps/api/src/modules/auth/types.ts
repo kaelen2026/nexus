@@ -18,3 +18,8 @@ export interface Clock {
 }
 
 export type SendOtp = (input: { phoneNumber: string }) => Promise<{ expiresAt: Date }>
+
+export type VerifyPhoneOtp = (input: {
+  phoneNumber: string
+  otp: string
+}) => Promise<{ userId: string; accountId: string; sessionId: string }>
