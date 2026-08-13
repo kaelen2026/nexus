@@ -144,4 +144,16 @@ describe('apiClient', () => {
       expect.objectContaining({ method: 'POST', credentials: 'include' }),
     )
   })
+
+  it('deletes the current account with cookie credentials', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createApiClient().deleteAccount()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/users/me',
+      expect.objectContaining({ method: 'DELETE', credentials: 'include' }),
+    )
+  })
 })

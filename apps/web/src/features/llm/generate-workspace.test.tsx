@@ -10,6 +10,7 @@ function createApi(generate: NexusApi['generate']): NexusApi {
     generate,
     logout: vi.fn(),
     logoutAll: vi.fn(),
+    deleteAccount: vi.fn(),
   }
 }
 
