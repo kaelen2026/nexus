@@ -23,11 +23,17 @@ The enforceable rules are:
 5. Repos access only their module's tables.
 6. The module graph is acyclic.
 
-Initial dependencies are `Gateway -> Auth` and `LLM -> Billing`. Users publishes `users.user-created`; Billing consumes it to create the free subscription, avoiding a Users/Billing cycle.
+Current business dependencies include `LLM -> Billing`. Gateway consumes Auth's public token
+verification capability while composing HTTP middleware. Users publishes `users.user-created`;
+Billing consumes it to create the free subscription, avoiding a Users/Billing cycle.
 
 ## Gateway and Request Context
 
-Gateway owns request IDs/context, authentication, authorization, rate limiting, security, error mapping, structured logs, metrics, and tracing. It has no subscription, quota, profile, or LLM-routing logic and does not access business data directly.
+Gateway is the intended home for request IDs/context, authentication, authorization, rate limiting,
+security, error mapping, structured logs, metrics, and tracing. Today it implements request context,
+access-token/cookie authentication, trusted-origin enforcement, and CORS. Rate limiting, structured
+application logging, metrics, and tracing remain deferred. Gateway has no subscription, quota,
+profile, or LLM-routing logic and does not access business data directly.
 
 ```ts
 interface RequestContext {
@@ -54,7 +60,9 @@ User is the stable business subject; Account is a login identity; Credential is 
 
 Auth owns `auth_*`; Users owns `users`, `user_profiles`, and `user_settings`; Billing owns `billing_*`; LLM owns `llm_*`. Shared PostgreSQL does not permit cross-module table access.
 
-Auth uses short-lived JWT access tokens, opaque rotating refresh tokens, and server-side sessions. Only refresh-token hashes are stored. API-key plaintext is returned once; only its hash and prefix persist.
+Auth uses short-lived JWT access tokens, opaque rotating refresh tokens, and server-side sessions.
+Only refresh-token hashes are stored. API keys are a future capability; when introduced, their
+plaintext must be returned once and only a hash and safe prefix may persist.
 
 ## Billing and LLM
 
@@ -71,11 +79,16 @@ Provider Usage, Billing Usage, and Provider Cost remain distinct. LLM owns provi
 
 ## Events, Observability, and Verification
 
-Use direct service calls for results and events for facts. Start with an in-memory bus; assume at-least-once delivery and idempotent consumers. Important state events can later use a transactional outbox without changing contracts.
+Use direct service calls for results and events for facts. The current in-memory bus is synchronous
+and non-durable. Consumers should remain idempotent so a future transactional outbox and external
+broker can provide at-least-once delivery without changing business effects or contracts.
 
 Correlate structured logs, metrics, traces, audit, and cost by relevant request, correlation, event, LLM request, reservation, session, and user IDs. Never log passwords, OTPs, tokens, API keys, Authorization headers, provider secrets, or full prompts by default.
 
-Architecture tests enforce imports, ownership, and an acyclic graph. Integration tests prefer real PostgreSQL and Redis and focused fakes for SMS, providers, time, and IDs.
+Architecture conventions cover imports, ownership, and an acyclic graph. Only the bootstrap SDK
+boundary currently has an executable architecture test; the broader matrix below remains work to
+automate. Integration tests use real PostgreSQL and Redis where persistence semantics matter and
+focused fakes for SMS and providers.
 
 The first protected slice is `Phone OTP -> User + Account + Session -> Free Plan -> Access Token -> GET /users/me -> LLM Generate -> Entitlement + Quota -> Provider -> Usage`.
 
@@ -86,6 +99,7 @@ The first protected slice is `Phone OTP -> User + Account + Session -> Free Plan
 - [Billing module](../modules/billing.md)
 - [LLM module](../modules/llm.md)
 - [Event contracts](../contracts/events.md)
+- [Current implementation status](../project-status.md)
 - [First vertical-slice plan](../../.ai/plans/first-vertical-slice.md)
 
 ## Shared Code and Package Boundaries
@@ -96,7 +110,8 @@ The first protected slice is `Phone OTP -> User + Account + Session -> Free Plan
 
 ## Architecture Verification Matrix
 
-Executable architecture tests must eventually enforce all of the following:
+Executable architecture tests should enforce all of the following. As of 2026-08-13, only the
+bootstrap restriction against importing the Redis SDK directly is automated:
 
 | Rule | Violation to reject |
 | --- | --- |

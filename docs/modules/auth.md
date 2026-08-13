@@ -2,7 +2,9 @@
 
 ## Responsibility
 
-Auth owns authentication identities, credentials, sessions, refresh tokens, API keys, and the production of a runtime Identity. It does not own the stable business User or user profile.
+Auth owns authentication identities, sessions, refresh tokens, and the production of a runtime
+Identity. Phone Accounts are implemented; credentials, passwords, API keys, and account linking are
+future capabilities. Auth does not own the stable business User or user profile.
 
 ```text
 User 1:N Account
@@ -45,10 +47,15 @@ auth/
 
 ## Owned Data
 
+Currently persisted:
+
 - `auth_accounts`
-- `auth_credentials`
 - `auth_sessions`
 - `auth_refresh_tokens`
+
+Reserved for future capabilities, but not present in the current schema:
+
+- `auth_credentials`
 - `auth_api_keys`
 
 OTP challenges may live in Redis because they are short-lived authentication state. Auth owns their key format and lifecycle.
@@ -85,7 +92,7 @@ The same external Account cannot belong to multiple Users. Repeated authenticati
 - Refresh rotation: every successful refresh replaces the token.
 - Reuse detection: reuse of an already-rotated token revokes the affected session/token family.
 - Logout revokes the current session; logout-all revokes every session for the User.
-- API keys return plaintext once and persist only hash plus a safe prefix.
+- Future API keys must return plaintext once and persist only hash plus a safe prefix.
 
 Access tokens use signed JWTs with issuer, audience, subject (`userId`), `accountId`, `sessionId`, issued-at, and expiry claims. Refresh tokens are 256-bit opaque random values. Their persisted representation is an HMAC-SHA-256 hash; plaintext is returned only to the client.
 

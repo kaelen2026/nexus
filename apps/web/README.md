@@ -5,17 +5,22 @@ HttpOnly cookie sessions, and authenticated LLM generation.
 
 ## Local development
 
-Install dependencies from the repository root and configure the public API origin:
+Install dependencies from the repository root. Next.js loads its local browser configuration from
+`apps/web/.env.local`; the root `.env` is for Docker Compose.
 
 ```bash
 pnpm install
-cp .env.example .env
 pnpm --filter @nexus/web dev
 ```
 
 The web app listens on `http://localhost:3001` and expects the API at
 `NEXT_PUBLIC_API_BASE_URL` (`http://localhost:3000` by default). The API must include
 `http://localhost:3001` in `TRUSTED_ORIGINS`.
+
+The current default API entry point exposes only `/health`; it does not yet supply the concrete SMS
+and LLM provider adapters required by the full runtime. UI unit/component tests are runnable, but an
+end-to-end login and generation session requires that runtime integration first. See the repository
+[project status](../../docs/project-status.md).
 
 Authentication requests always use `credentials: "include"`. Browser code never reads or stores
 access and refresh token plaintext. Protected API requests that receive `401` share a single
