@@ -22,5 +22,7 @@ export function createDatabase(options: DatabaseOptions) {
 }
 
 export type Database = ReturnType<typeof createDatabase>
+export type DatabaseClient = Database['client']
+export type DatabaseTransaction = Parameters<Parameters<DatabaseClient['transaction']>[0]>[0]
 
 export { migrateDatabase } from './migrate.js'
