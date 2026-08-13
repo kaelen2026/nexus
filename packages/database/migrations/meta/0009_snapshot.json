@@ -1,6 +1,6 @@
 {
-  "id": "9c3c0650-86f2-4aeb-a8c8-59b9d7abe9ad",
-  "prevId": "4de038e4-b295-4fac-ac87-91b2d2a3e799",
+  "id": "ce46a546-e12b-43e4-943d-8d858e00b309",
+  "prevId": "9c3c0650-86f2-4aeb-a8c8-59b9d7abe9ad",
   "version": "7",
   "dialect": "postgresql",
   "tables": {
@@ -841,7 +841,7 @@
     "public.auth_account_provider": {
       "name": "auth_account_provider",
       "schema": "public",
-      "values": ["phone", "email"]
+      "values": ["phone", "email", "google", "apple"]
     },
     "public.auth_account_status": {
       "name": "auth_account_status",

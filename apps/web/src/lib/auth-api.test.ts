@@ -75,4 +75,44 @@ describe('authApi', () => {
       expect.objectContaining({ body: JSON.stringify({ email: 'alice@example.com' }) }),
     )
   })
+
+  it('uses the email password login endpoint with cookie mode', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(
+        JSON.stringify({
+          sessionMode: 'cookie',
+          accessTokenExpiresAt: '2026-08-13T08:15:00.000Z',
+        }),
+        { status: 200, headers: { 'Content-Type': 'application/json' } },
+      ),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await authApi.loginWithEmailPassword({
+      email: 'alice@example.com',
+      password: 'correct horse battery staple',
+      sessionMode: 'cookie',
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/auth/email/password/login',
+      expect.objectContaining({ credentials: 'include', method: 'POST' }),
+    )
+  })
+
+  it('uses the email password reset endpoint', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await authApi.resetEmailPassword({
+      email: 'alice@example.com',
+      otp: '123456',
+      newPassword: 'correct horse battery staple',
+    })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/auth/email/password/reset',
+      expect.objectContaining({ method: 'POST' }),
+    )
+  })
 })

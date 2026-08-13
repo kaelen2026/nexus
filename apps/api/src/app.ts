@@ -10,9 +10,11 @@ import {
   type AuthenticateAccessToken,
   type CompleteOAuth,
   createAuthRouter,
+  type LoginWithEmailPassword,
   type Logout,
   type LogoutAll,
   type RefreshSession,
+  type ResetEmailPassword,
   type SendEmailOtp,
   type SendOtp,
   type StartOAuth,
@@ -32,6 +34,8 @@ interface AppDependencies {
   refreshSession?: RefreshSession
   logout?: Logout
   logoutAll?: LogoutAll
+  loginWithEmailPassword?: LoginWithEmailPassword
+  resetEmailPassword?: ResetEmailPassword
   getCurrentUser?: GetCurrentUser
   generate?: Generate
   startOAuth?: StartOAuth
@@ -57,6 +61,8 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     dependencies.sendOtp ||
     dependencies.sendEmailOtp ||
     dependencies.verifyEmailOtp ||
+    dependencies.loginWithEmailPassword ||
+    dependencies.resetEmailPassword ||
     dependencies.verifyPhoneOtp ||
     dependencies.refreshSession ||
     dependencies.logout ||

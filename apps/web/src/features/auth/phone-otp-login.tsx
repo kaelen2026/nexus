@@ -11,6 +11,7 @@ import { type AuthApi, authApi } from '@/lib/auth-api'
 const phoneSchema = z.string().trim().min(8).max(32)
 const emailSchema = z.email().max(320)
 const otpSchema = z.string().regex(/^\d{6}$/)
+const passwordSchema = z.string().min(12).max(128)
 const otpSlots = ['one', 'two', 'three', 'four', 'five', 'six'] as const
 
 function maskPhoneNumber(phoneNumber: string): string {
@@ -34,11 +35,13 @@ export function PhoneOtpLogin({
   oauthBaseUrl = process.env.NEXT_PUBLIC_API_BASE_URL ?? 'http://localhost:3000',
   initialError,
 }: PhoneOtpLoginProps) {
-  const [step, setStep] = useState<'credential' | 'otp'>('credential')
+  const [step, setStep] = useState<'credential' | 'otp' | 'password-reset'>('credential')
   const [method, setMethod] = useState<'phone' | 'email'>('phone')
+  const [emailMethod, setEmailMethod] = useState<'otp' | 'password'>('otp')
   const [phoneNumber, setPhoneNumber] = useState('')
   const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
+  const [password, setPassword] = useState('')
   const [error, setError] = useState<string | undefined>(initialError)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [otpExpiresAt, setOtpExpiresAt] = useState<number>()
@@ -112,6 +115,77 @@ export function PhoneOtpLogin({
     }
   }
 
+  async function loginWithPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const parsedEmail = emailSchema.safeParse(email)
+    const parsedPassword = passwordSchema.safeParse(password)
+    if (!parsedEmail.success || !parsedPassword.success) {
+      setError(!parsedEmail.success ? '请输入有效的邮箱地址' : '密码至少需要 12 个字符')
+      return
+    }
+    setError(undefined)
+    setIsSubmitting(true)
+    try {
+      await api.loginWithEmailPassword({
+        email: parsedEmail.data,
+        password: parsedPassword.data,
+        sessionMode: 'cookie',
+      })
+      onAuthenticated()
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function beginPasswordReset() {
+    const parsed = emailSchema.safeParse(email)
+    if (!parsed.success) {
+      setError('请输入有效的邮箱地址')
+      return
+    }
+    setError(undefined)
+    setIsSubmitting(true)
+    try {
+      const result = await api.sendEmailOtp({ email: parsed.data })
+      setEmail(parsed.data)
+      setPassword('')
+      setOtpExpiresAt(new Date(result.expiresAt).getTime())
+      setStep('password-reset')
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
+  async function resetPassword(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const parsedOtp = otpSchema.safeParse(otp)
+    const parsedPassword = passwordSchema.safeParse(password)
+    if (!parsedOtp.success || !parsedPassword.success) {
+      setError(!parsedOtp.success ? '请输入 6 位验证码' : '密码至少需要 12 个字符')
+      return
+    }
+    setError(undefined)
+    setIsSubmitting(true)
+    try {
+      await api.resetEmailPassword({
+        email,
+        otp: parsedOtp.data,
+        newPassword: parsedPassword.data,
+      })
+      setStep('credential')
+      setOtp('')
+      setError(undefined)
+    } catch (cause) {
+      setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
+    } finally {
+      setIsSubmitting(false)
+    }
+  }
+
   return (
     <div className="w-full max-w-[25rem]">
       <div className="mb-12 flex items-center gap-3 lg:hidden">
@@ -126,7 +200,10 @@ export function PhoneOtpLogin({
       </div>
 
       {step === 'credential' ? (
-        <form onSubmit={sendOtp} noValidate>
+        <form
+          onSubmit={method === 'email' && emailMethod === 'password' ? loginWithPassword : sendOtp}
+          noValidate
+        >
           <header className="mb-12">
             <h1 className="text-[2rem] font-semibold tracking-[-0.045em]">登录 Nexus</h1>
             <p className="mt-3 text-base text-muted-foreground">使用手机号或邮箱继续</p>
@@ -153,6 +230,31 @@ export function PhoneOtpLogin({
             ))}
           </fieldset>
 
+          {method === 'email' && (
+            <fieldset
+              className="mb-8 flex gap-6 border-b text-sm font-medium"
+              aria-label="邮箱登录方式"
+            >
+              {(['otp', 'password'] as const).map((option) => (
+                <button
+                  key={option}
+                  type="button"
+                  onClick={() => {
+                    setEmailMethod(option)
+                    setError(undefined)
+                  }}
+                  className={`border-b-2 px-1 pb-3 ${
+                    emailMethod === option
+                      ? 'border-primary text-foreground'
+                      : 'border-transparent text-muted-foreground'
+                  }`}
+                >
+                  {option === 'otp' ? '验证码登录' : '密码登录'}
+                </button>
+              ))}
+            </fieldset>
+          )}
+
           <label className="block text-sm font-medium" htmlFor="credential">
             {method === 'phone' ? '手机号' : '邮箱'}
           </label>
@@ -173,13 +275,45 @@ export function PhoneOtpLogin({
             className="mt-3 h-14 w-full rounded-[0.7rem] border bg-background px-4 text-base outline-none transition-shadow placeholder:text-muted-foreground/65 focus:border-primary focus:ring-3 focus:ring-primary/15 aria-invalid:border-destructive"
           />
 
+          {method === 'email' && emailMethod === 'password' && (
+            <>
+              <label className="mt-6 block text-sm font-medium" htmlFor="password">
+                密码
+              </label>
+              <input
+                id="password"
+                type="password"
+                autoComplete="current-password"
+                value={password}
+                onChange={(event) => {
+                  setPassword(event.target.value)
+                  setError(undefined)
+                }}
+                className="mt-3 h-14 w-full rounded-[0.7rem] border bg-background px-4 text-base outline-none transition-shadow focus:border-primary focus:ring-3 focus:ring-primary/15"
+              />
+              <button
+                type="button"
+                onClick={beginPasswordReset}
+                className="mt-4 block text-sm font-medium text-primary hover:underline"
+              >
+                忘记密码？
+              </button>
+            </>
+          )}
+
           <Button
             type="submit"
             className="mt-8 h-14 w-full rounded-[0.7rem] text-base"
             disabled={isSubmitting}
           >
             {isSubmitting && <LoaderCircleIcon className="animate-spin" aria-hidden="true" />}
-            {isSubmitting ? '正在发送' : '获取验证码'}
+            {isSubmitting
+              ? emailMethod === 'password' && method === 'email'
+                ? '正在登录'
+                : '正在发送'
+              : emailMethod === 'password' && method === 'email'
+                ? '登录'
+                : '获取验证码'}
           </Button>
           <div className="my-7 flex items-center gap-4 text-xs text-muted-foreground">
             <span className="h-px flex-1 bg-border" aria-hidden="true" />
@@ -202,7 +336,7 @@ export function PhoneOtpLogin({
           </div>
           <AuthError message={error} />
         </form>
-      ) : (
+      ) : step === 'otp' ? (
         <form onSubmit={verifyOtp} noValidate>
           <header className="mb-12">
             <h1 className="text-[2rem] font-semibold tracking-[-0.045em]">输入验证码</h1>
@@ -270,6 +404,45 @@ export function PhoneOtpLogin({
           >
             {resendSeconds > 0 ? `重新发送（${resendSeconds}s）` : '重新发送'}
           </button>
+          <AuthError message={error} />
+        </form>
+      ) : (
+        <form onSubmit={resetPassword} noValidate>
+          <header className="mb-10">
+            <h1 className="text-[2rem] font-semibold tracking-[-0.045em]">设置新密码</h1>
+            <p className="mt-3 text-base text-muted-foreground">验证码已发送至 {email}</p>
+          </header>
+          <label className="block text-sm font-medium" htmlFor="reset-otp">
+            6 位验证码
+          </label>
+          <input
+            id="reset-otp"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            maxLength={6}
+            value={otp}
+            onChange={(event) => setOtp(event.target.value.replace(/\D/g, '').slice(0, 6))}
+            className="mt-3 h-14 w-full rounded-[0.7rem] border bg-background px-4 font-mono text-lg outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
+          />
+          <label className="mt-6 block text-sm font-medium" htmlFor="new-password">
+            新密码
+          </label>
+          <input
+            id="new-password"
+            type="password"
+            autoComplete="new-password"
+            value={password}
+            onChange={(event) => setPassword(event.target.value)}
+            className="mt-3 h-14 w-full rounded-[0.7rem] border bg-background px-4 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
+          />
+          <p className="mt-3 text-sm text-muted-foreground">至少 12 个字符</p>
+          <Button
+            type="submit"
+            className="mt-8 h-14 w-full rounded-[0.7rem] text-base"
+            disabled={isSubmitting}
+          >
+            {isSubmitting ? '正在保存' : '保存新密码'}
+          </Button>
           <AuthError message={error} />
         </form>
       )}

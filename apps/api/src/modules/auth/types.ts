@@ -27,6 +27,17 @@ export type SendEmailOtp = (input: { email: string }) => Promise<{ expiresAt: Da
 export type VerifyPhoneOtp = (input: { phoneNumber: string; otp: string }) => Promise<AuthTokenPair>
 export type VerifyEmailOtp = (input: { email: string; otp: string }) => Promise<AuthTokenPair>
 
+export type LoginWithEmailPassword = (input: {
+  email: string
+  password: string
+}) => Promise<AuthTokenPair>
+
+export type ResetEmailPassword = (input: {
+  email: string
+  otp: string
+  newPassword: string
+}) => Promise<void>
+
 export interface AuthTokenPair {
   tokenType: 'Bearer'
   accessToken: string

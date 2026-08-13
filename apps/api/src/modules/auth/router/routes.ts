@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono'
 
 import type { GatewayEnvironment } from '../../../gateway/index.js'
 import {
+  InvalidCredentialsError,
   InvalidOAuthCallbackError,
   InvalidOtpError,
   InvalidRefreshTokenError,
@@ -10,10 +11,12 @@ import {
 } from '../errors.js'
 import type {
   CompleteOAuth,
+  LoginWithEmailPassword,
   Logout,
   LogoutAll,
   OAuthProviderId,
   RefreshSession,
+  ResetEmailPassword,
   SendEmailOtp,
   SendOtp,
   StartOAuth,
@@ -27,7 +30,9 @@ import {
   setAuthCookies,
 } from './cookies.js'
 import {
+  loginEmailPasswordBodySchema,
   refreshBodySchema,
+  resetEmailPasswordBodySchema,
   sendEmailOtpBodySchema,
   sendOtpBodySchema,
   verifyEmailOtpBodySchema,
@@ -45,8 +50,71 @@ export function createAuthRouter(options: {
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
   authWebUrl?: string
+  loginWithEmailPassword?: LoginWithEmailPassword
+  resetEmailPassword?: ResetEmailPassword
 }): Hono<GatewayEnvironment> {
   const router = new Hono<GatewayEnvironment>()
+
+  if (options.loginWithEmailPassword)
+    router.post('/email/password/login', async (context) => {
+      const body = loginEmailPasswordBodySchema.safeParse(
+        await context.req.json().catch(() => null),
+      )
+      if (!body.success) {
+        return context.json(
+          { error: { code: 'INVALID_REQUEST', message: 'Invalid request body' } },
+          400,
+        )
+      }
+      try {
+        const { sessionMode, ...input } = body.data
+        const tokenPair = await options.loginWithEmailPassword?.(input)
+        if (!tokenPair) throw new Error('Email password login is not configured')
+        if (sessionMode === 'cookie') {
+          setAuthCookies(context, tokenPair)
+          return context.json(cookieSessionResponse(tokenPair))
+        }
+        return context.json(tokenPair)
+      } catch (error) {
+        if (error instanceof InvalidCredentialsError) {
+          return context.json(
+            {
+              error: {
+                code: 'INVALID_CREDENTIALS',
+                message: 'Invalid email or password',
+              },
+            },
+            401,
+          )
+        }
+        throw error
+      }
+    })
+
+  if (options.resetEmailPassword)
+    router.post('/email/password/reset', async (context) => {
+      const body = resetEmailPasswordBodySchema.safeParse(
+        await context.req.json().catch(() => null),
+      )
+      if (!body.success) {
+        return context.json(
+          { error: { code: 'INVALID_REQUEST', message: 'Invalid request body' } },
+          400,
+        )
+      }
+      try {
+        await options.resetEmailPassword?.(body.data)
+        return context.body(null, 204)
+      } catch (error) {
+        if (error instanceof InvalidOtpError) {
+          return context.json(
+            { error: { code: 'INVALID_OTP', message: 'Invalid or expired OTP' } },
+            401,
+          )
+        }
+        throw error
+      }
+    })
 
   if (options.sendEmailOtp)
     router.post('/email/otp/send', async (context) => {

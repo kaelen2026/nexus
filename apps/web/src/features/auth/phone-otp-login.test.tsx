@@ -16,6 +16,11 @@ function createAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
       sessionMode: 'cookie',
       accessTokenExpiresAt: '2026-08-13T08:15:00.000Z',
     }),
+    loginWithEmailPassword: vi.fn().mockResolvedValue({
+      sessionMode: 'cookie',
+      accessTokenExpiresAt: '2026-08-13T08:15:00.000Z',
+    }),
+    resetEmailPassword: vi.fn().mockResolvedValue(undefined),
     ...overrides,
   }
 }
@@ -82,6 +87,57 @@ describe('PhoneOtpLogin', () => {
       otp: '123456',
       sessionMode: 'cookie',
     })
+  })
+
+  it('supports email password login', async () => {
+    const api = createAuthApi()
+    const onAuthenticated = vi.fn()
+    render(<PhoneOtpLogin api={api} onAuthenticated={onAuthenticated} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '邮箱' }))
+    fireEvent.click(screen.getByRole('button', { name: '密码登录' }))
+    fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'alice@example.com' } })
+    fireEvent.change(screen.getByLabelText('密码'), {
+      target: { value: 'correct horse battery staple' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '登录' }))
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledOnce())
+    expect(api.loginWithEmailPassword).toHaveBeenCalledWith({
+      email: 'alice@example.com',
+      password: 'correct horse battery staple',
+      sessionMode: 'cookie',
+    })
+  })
+
+  it('resets a forgotten password with an email OTP', async () => {
+    const api = createAuthApi()
+    render(<PhoneOtpLogin api={api} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '邮箱' }))
+    fireEvent.click(screen.getByRole('button', { name: '密码登录' }))
+    fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'alice@example.com' } })
+    fireEvent.change(screen.getByLabelText('密码'), { target: { value: 'previous password' } })
+    fireEvent.click(screen.getByRole('button', { name: '忘记密码？' }))
+
+    expect(await screen.findByRole('heading', { name: '设置新密码' })).toBeInTheDocument()
+    expect(api.sendEmailOtp).toHaveBeenCalledWith({ email: 'alice@example.com' })
+    expect(screen.getByLabelText('新密码')).toHaveValue('')
+
+    fireEvent.change(screen.getByLabelText('6 位验证码'), { target: { value: '123456' } })
+    fireEvent.change(screen.getByLabelText('新密码'), {
+      target: { value: 'new correct password' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '保存新密码' }))
+
+    await waitFor(() =>
+      expect(api.resetEmailPassword).toHaveBeenCalledWith({
+        email: 'alice@example.com',
+        otp: '123456',
+        newPassword: 'new correct password',
+      }),
+    )
+    expect(await screen.findByRole('heading', { name: '登录 Nexus' })).toBeInTheDocument()
   })
 
   it('rejects an incomplete verification code without sending a request', async () => {

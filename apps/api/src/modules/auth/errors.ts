@@ -32,3 +32,10 @@ export class OAuthProviderUnavailableError extends Error {
     this.name = 'OAuthProviderUnavailableError'
   }
 }
+
+export class InvalidCredentialsError extends Error {
+  constructor() {
+    super('Invalid email or password')
+    this.name = 'InvalidCredentialsError'
+  }
+}
