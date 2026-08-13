@@ -53,6 +53,8 @@ auth/
 
 OTP challenges may live in Redis because they are short-lived authentication state. Auth owns their key format and lifecycle.
 
+Redis SDK usage, client creation, connection lifecycle, and OTP challenge persistence stay inside Auth `infra`. Bootstrap may pass `REDIS_URL` through the Auth public composition API, but it must not import or operate the Redis SDK directly.
+
 ## Phone OTP Flow
 
 ```text
