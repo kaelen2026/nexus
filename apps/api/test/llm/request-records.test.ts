@@ -29,6 +29,7 @@ describe('LLM request records', () => {
       database: database.client,
       billing: createBilling(),
       provider: {
+        countInputTokens: vi.fn().mockResolvedValue(12),
         generate: vi.fn().mockResolvedValue({
           text: 'Hello back',
           usage: { inputTokens: 12, outputTokens: 8 },
@@ -80,7 +81,10 @@ describe('LLM request records', () => {
     const llm = createLlmModule({
       database: database.client,
       billing: createBilling(),
-      provider: { generate: vi.fn().mockRejectedValue(new Error('secret provider detail')) },
+      provider: {
+        countInputTokens: vi.fn().mockResolvedValue(1),
+        generate: vi.fn().mockRejectedValue(new Error('secret provider detail')),
+      },
     })
 
     await expect(
@@ -120,6 +124,7 @@ describe('LLM request records', () => {
       database: database.client,
       billing,
       provider: {
+        countInputTokens: vi.fn().mockResolvedValue(4),
         generate: vi.fn().mockResolvedValue({
           text: 'Hello back',
           usage: { inputTokens: 4, outputTokens: 6 },
