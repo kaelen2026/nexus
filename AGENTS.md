@@ -13,10 +13,13 @@ Prefer the smallest implementation that preserves module boundaries. Do not add 
 Never develop directly on `main`. Every change uses a short-lived branch and a Pull Request:
 
 1. Update local `main` from `origin/main`.
-2. Create a branch such as `feat/<topic>`, `fix/<topic>`, `test/<topic>`, or `chore/<topic>`.
-3. Work in small Red/Green/Refactor commits using Conventional Commits.
-4. Push the branch and open a Pull Request against `main`.
-5. Merge only after required CI checks pass and review requirements are satisfied.
+2. Create every new branch in its own Git worktree; never reuse the `main` checkout for feature work.
+3. Place the worktree beside the `main` project directory. Name its directory `<project>-<branch>`, replacing `/` in the branch name with `-`. For example, branch `feat/llm-generate` for project `nexus` uses sibling directory `nexus-feat-llm-generate`.
+4. Create the branch and worktree together from updated `origin/main`, for example: `git worktree add -b feat/llm-generate ../nexus-feat-llm-generate origin/main`.
+5. Use branch names such as `feat/<topic>`, `fix/<topic>`, `test/<topic>`, or `chore/<topic>`.
+6. Work in small Red/Green/Refactor commits using Conventional Commits.
+7. Push the branch and open a Pull Request against `main`.
+8. Merge only after required CI checks pass and review requirements are satisfied.
 
 Keep PRs focused on one behavior or cohesive vertical-slice increment. Do not mix unrelated refactors. Prefer squash merge so `main` retains one Conventional Commit per PR, and delete the source branch after merge.
 
