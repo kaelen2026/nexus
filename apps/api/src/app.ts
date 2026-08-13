@@ -25,7 +25,7 @@ import {
   type VerifyEmailOtp,
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
-import { createLlmRouter, type Generate } from './modules/llm/index.js'
+import { createLlmRouter, type Generate, type GenerateStream } from './modules/llm/index.js'
 import {
   createUsersRouter,
   type GetCurrentUser,
@@ -54,6 +54,7 @@ interface AppDependencies {
   getSettings?: GetSettings
   updateSettings?: UpdateSettings
   generate?: Generate
+  generateStream?: GenerateStream
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
   authWebUrl?: string
@@ -113,8 +114,14 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
       }),
     )
   }
-  if (dependencies.generate) {
-    app.route('/llm', createLlmRouter({ generate: dependencies.generate }))
+  if (dependencies.generate || dependencies.generateStream) {
+    app.route(
+      '/llm',
+      createLlmRouter({
+        ...(dependencies.generate ? { generate: dependencies.generate } : {}),
+        ...(dependencies.generateStream ? { generateStream: dependencies.generateStream } : {}),
+      }),
+    )
   }
   return app
 }

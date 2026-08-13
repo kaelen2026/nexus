@@ -24,3 +24,15 @@ export interface GenerateResult {
 }
 
 export type Generate = (input: GenerateInput) => Promise<GenerateResult>
+
+export type GenerateStreamEvent =
+  | { type: 'delta'; text: string }
+  | { type: 'completed'; usage: GenerateResult['usage'] }
+
+export interface GenerateStreamResult {
+  requestId: string
+  model: 'standard'
+  events: AsyncIterable<GenerateStreamEvent>
+}
+
+export type GenerateStream = (input: GenerateInput) => Promise<GenerateStreamResult>

@@ -6,9 +6,9 @@ LLM owns model resolution, provider/channel selection, provider adapters, reques
 
 ## Intended Shape
 
-The current implementation contains the generate router/service, model resolver, request repo, and
-provider protocol. Streaming, channel selection, concrete provider adapters, pricing, health, and
-provider-cost accounting shown below are deferred.
+The current implementation contains synchronous and streaming generate services, the model
+resolver, request repo, provider protocol, local adapter, and OpenAI Responses adapter. Channel
+selection, additional providers, pricing, health, and provider-cost accounting remain deferred.
 
 ```text
 llm/
@@ -75,7 +75,11 @@ Every operation that reaches a Provider has a durable `llm_requests` lifecycle r
 
 ## Streaming
 
-Normalized events are `start`, `text_delta`, `tool_call_delta`, `usage`, `done`, and `error`.
+`POST /llm/generate/stream` emits server-sent `start`, `delta`, `completed`, and `error` events.
+The OpenAI adapter translates `response.output_text.delta` and `response.completed` events into the
+provider-neutral service protocol. The completed event commits provider-reported input and output
+usage; provider failure, an incomplete stream, or client cancellation finalizes the request as
+failed and releases its reservation.
 
 - Before the first emitted chunk, retry or provider fallback is allowed.
 - After the first emitted chunk, cross-provider fallback is disabled by default to avoid duplicated or inconsistent output.

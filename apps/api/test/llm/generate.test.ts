@@ -19,6 +19,93 @@ afterAll(async () => database.close())
 const userId = '00000000-0000-4000-8000-000000000031'
 
 describe('LLM generate', () => {
+  it('commits actual usage after a completed provider stream', async () => {
+    const billing = {
+      getEntitlement: vi.fn().mockResolvedValue(true),
+      reserveUsage: vi.fn().mockResolvedValue({ reservationId: 'stream-reservation' }),
+      commitUsage: vi.fn().mockResolvedValue(undefined),
+      releaseUsage: vi.fn(),
+    }
+    const llm = createLlmModule({
+      database: database.client,
+      billing,
+      provider: {
+        countInputTokens: vi.fn().mockResolvedValue(2),
+        generate: vi.fn(),
+        stream: vi.fn().mockResolvedValue(
+          (async function* () {
+            yield { type: 'delta' as const, text: 'Hello back' }
+            yield {
+              type: 'completed' as const,
+              usage: { inputTokens: 2, outputTokens: 3 },
+            }
+          })(),
+        ),
+      },
+    })
+
+    const result = await llm.generateStream({
+      userId,
+      model: 'standard',
+      prompt: 'Hello',
+      maxTokens: 100,
+    })
+    const events = []
+    for await (const event of result.events) events.push(event)
+
+    expect(events).toEqual([
+      { type: 'delta', text: 'Hello back' },
+      { type: 'completed', usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 } },
+    ])
+    expect(billing.commitUsage).toHaveBeenCalledWith({
+      reservationId: 'stream-reservation',
+      actualUnits: 5,
+    })
+    expect(billing.releaseUsage).not.toHaveBeenCalled()
+  })
+
+  it('releases reserved usage when a consumer cancels a provider stream', async () => {
+    const billing = {
+      getEntitlement: vi.fn().mockResolvedValue(true),
+      reserveUsage: vi.fn().mockResolvedValue({ reservationId: 'stream-reservation' }),
+      commitUsage: vi.fn(),
+      releaseUsage: vi.fn().mockResolvedValue(undefined),
+    }
+    const llm = createLlmModule({
+      database: database.client,
+      billing,
+      provider: {
+        countInputTokens: vi.fn().mockResolvedValue(2),
+        generate: vi.fn(),
+        stream: vi.fn().mockResolvedValue(
+          (async function* () {
+            yield { type: 'delta' as const, text: 'partial' }
+            yield {
+              type: 'completed' as const,
+              usage: { inputTokens: 2, outputTokens: 3 },
+            }
+          })(),
+        ),
+      },
+    })
+
+    const result = await llm.generateStream({
+      userId,
+      model: 'standard',
+      prompt: 'Hello',
+      maxTokens: 100,
+    })
+    const iterator = result.events[Symbol.asyncIterator]()
+    await expect(iterator.next()).resolves.toEqual({
+      done: false,
+      value: { type: 'delta', text: 'partial' },
+    })
+    await iterator.return?.()
+
+    expect(billing.commitUsage).not.toHaveBeenCalled()
+    expect(billing.releaseUsage).toHaveBeenCalledWith({ reservationId: 'stream-reservation' })
+  })
+
   it('does not reserve usage or invoke the provider without the generate entitlement', async () => {
     const billing = {
       getEntitlement: vi.fn().mockResolvedValue(false),

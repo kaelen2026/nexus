@@ -4,9 +4,9 @@ Nexus is a TypeScript monorepo for an authenticated LLM product. It currently co
 modular-monolith API, a Next.js web application, and a shared PostgreSQL/Drizzle package.
 
 The implemented vertical slice covers phone OTP authentication, cookie and Bearer sessions,
-current-user lookup, free-plan assignment, entitlement and quota enforcement, non-streaming LLM
-generation, durable request records, and normalized usage accounting. The browser UI supports OTP
-login, session revocation, and the authenticated generation workspace.
+current-user lookup, free-plan assignment, entitlement and quota enforcement, OpenAI-backed
+streaming LLM generation, durable request records, and normalized usage accounting. The browser UI
+supports OTP login, session revocation, and an authenticated streaming generation workspace.
 
 ## Repository
 
@@ -25,8 +25,9 @@ The API follows `router -> service -> repo`. Business modules live in
 
 The domain flow is implemented and exercised through unit, HTTP, module integration, and web
 component tests. In development, the default API entry point composes the complete local runtime
-with in-memory SMS/email inboxes and a deterministic LLM provider. Production provider selection
-and deployment composition remain deferred.
+with in-memory SMS/email inboxes and a deterministic LLM provider. Setting `OPENAI_API_KEY` selects
+the OpenAI Responses adapter; `OPENAI_MODEL` controls the provider model. Deployment composition
+remains deferred.
 
 See [project status](docs/project-status.md) for the implementation matrix and known gaps.
 

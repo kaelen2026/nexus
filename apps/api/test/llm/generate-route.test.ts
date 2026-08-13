@@ -13,6 +13,37 @@ const identity = {
 }
 
 describe('POST /llm/generate', () => {
+  it('streams generated text and final usage as server-sent events', async () => {
+    const generateStream = vi.fn().mockResolvedValue({
+      requestId: 'request-id',
+      model: 'standard',
+      events: (async function* () {
+        yield { type: 'delta' as const, text: 'Hello ' }
+        yield { type: 'delta' as const, text: 'back' }
+        yield {
+          type: 'completed' as const,
+          usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+        }
+      })(),
+    })
+    const app = createApp({
+      authenticateAccessToken: vi.fn().mockResolvedValue(identity),
+      generateStream,
+    })
+
+    const response = await app.request('/llm/generate/stream', {
+      method: 'POST',
+      headers: { authorization: 'Bearer access-token', 'content-type': 'application/json' },
+      body: JSON.stringify({ model: 'standard', prompt: 'Hello', maxTokens: 100 }),
+    })
+
+    expect(response.status).toBe(200)
+    expect(response.headers.get('content-type')).toContain('text/event-stream')
+    await expect(response.text()).resolves.toContain(
+      'event: completed\ndata: {"usage":{"inputTokens":2,"outputTokens":3,"totalTokens":5}}',
+    )
+  })
+
   it('generates for the authenticated User without accepting a caller-supplied userId', async () => {
     const generate = vi.fn().mockResolvedValue({
       requestId: 'request-id',

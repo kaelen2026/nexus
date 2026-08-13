@@ -1,7 +1,7 @@
 import { z } from 'zod'
 
 import { createLocalDevelopmentEmail, createLocalDevelopmentSms } from '../modules/auth/index.js'
-import { createLocalDevelopmentLlmProvider } from '../modules/llm/index.js'
+import { createLocalDevelopmentLlmProvider, createOpenAiLlmProvider } from '../modules/llm/index.js'
 import { createApiRuntime } from './runtime.js'
 
 const localEnvironmentSchema = z.object({
@@ -49,7 +49,12 @@ export async function createLocalDevelopmentRuntime(options: {
         : {}),
     },
     emailSender: email.sender,
-    llmProvider: createLocalDevelopmentLlmProvider(),
+    llmProvider: options.env.OPENAI_API_KEY
+      ? createOpenAiLlmProvider({ apiKey: options.env.OPENAI_API_KEY })
+      : createLocalDevelopmentLlmProvider(),
+    ...(options.env.OPENAI_API_KEY
+      ? { llmProviderModel: options.env.OPENAI_MODEL ?? 'gpt-5.4-mini' }
+      : {}),
     smsSender: sms.sender,
   })
 
