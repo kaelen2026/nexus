@@ -1,0 +1,29 @@
+{
+  "name": "nexus",
+  "private": true,
+  "packageManager": "pnpm@10.14.0",
+  "scripts": {
+    "build": "turbo run build",
+    "check": "biome check .",
+    "dev": "turbo run dev",
+    "format": "biome format --write .",
+    "format:check": "biome format .",
+    "lint": "biome lint .",
+    "lint:staged": "lint-staged",
+    "prepare": "husky",
+    "test": "turbo run test",
+    "typecheck": "turbo run typecheck"
+  },
+  "lint-staged": {
+    "*.{js,cjs,mjs,ts,tsx,json,jsonc,css,md,yaml,yml}": "biome check --write --no-errors-on-unmatched"
+  },
+  "devDependencies": {
+    "@biomejs/biome": "^2.2.0",
+    "@commitlint/cli": "^19.8.1",
+    "@commitlint/config-conventional": "^19.8.1",
+    "husky": "^9.1.7",
+    "lint-staged": "^16.1.5",
+    "turbo": "^2.5.6",
+    "typescript": "^5.9.2"
+  }
+}
