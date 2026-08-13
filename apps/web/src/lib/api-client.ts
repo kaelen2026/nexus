@@ -41,6 +41,7 @@ export interface GenerateInput {
 export interface NexusApi {
   getCurrentUser(): Promise<CurrentUser>
   generate(input: GenerateInput): Promise<GenerateResult>
+  generateStream?(input: GenerateInput, onDelta: (text: string) => void): Promise<GenerateResult>
   logout(): Promise<void>
   logoutAll(): Promise<void>
   deleteAccount(): Promise<void>
@@ -131,6 +132,83 @@ export function createApiClient(): NexusApi {
     return parsed.data
   }
 
+  async function generateStream(
+    input: GenerateInput,
+    onDelta: (text: string) => void,
+    refreshOnUnauthorized = true,
+  ): Promise<GenerateResult> {
+    let response: Response
+    try {
+      response = await fetch(`${baseUrl}/llm/generate/stream`, {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(input),
+      })
+    } catch {
+      throw new ApiError('NETWORK_ERROR', '暂时无法连接服务，请稍后重试')
+    }
+    if (response.status === 401 && refreshOnUnauthorized) {
+      try {
+        await refreshSession()
+      } catch {
+        throw new ApiError('UNAUTHENTICATED', errorMessages.UNAUTHENTICATED)
+      }
+      return generateStream(input, onDelta, false)
+    }
+    if (!response.ok) {
+      const payload: unknown = await response.json().catch(() => null)
+      const parsedError = apiErrorSchema.safeParse(payload)
+      const code = parsedError.success ? parsedError.data.error.code : 'UNKNOWN_ERROR'
+      throw new ApiError(code, errorMessages[code] ?? '请求失败，请稍后重试')
+    }
+    if (!response.body) throw new ApiError('INVALID_RESPONSE', '服务响应异常，请稍后重试')
+
+    const decoder = new TextDecoder()
+    const reader = response.body.getReader()
+    let buffer = ''
+    let requestId: string | undefined
+    let model: 'standard' | undefined
+    let text = ''
+    let usage: GenerateResult['usage'] | undefined
+    while (true) {
+      const { done, value } = await reader.read()
+      buffer += decoder.decode(value, { stream: !done })
+      const blocks = buffer.split(/\r?\n\r?\n/u)
+      buffer = blocks.pop() ?? ''
+      for (const block of blocks) {
+        const event = block.match(/^event:\s*(.+)$/mu)?.[1]
+        const data = block.match(/^data:\s*(.+)$/mu)?.[1]
+        if (!event || !data) continue
+        const payload: unknown = JSON.parse(data)
+        if (event === 'start') {
+          const parsed = z
+            .object({ requestId: z.string().min(1), model: z.literal('standard') })
+            .parse(payload)
+          requestId = parsed.requestId
+          model = parsed.model
+        } else if (event === 'delta') {
+          const delta = z.object({ text: z.string() }).parse(payload).text
+          text += delta
+          onDelta(delta)
+        } else if (event === 'completed') {
+          usage = z.object({ usage: generateResponseSchema.shape.usage }).parse(payload).usage
+        } else if (event === 'error') {
+          const parsedError = apiErrorSchema.parse(payload)
+          throw new ApiError(
+            parsedError.error.code,
+            errorMessages[parsedError.error.code] ?? '生成失败，请稍后重试',
+          )
+        }
+      }
+      if (done) break
+    }
+    if (!requestId || !model || !usage) {
+      throw new ApiError('INVALID_RESPONSE', '服务响应异常，请稍后重试')
+    }
+    return { requestId, model, text, usage }
+  }
+
   return {
     getCurrentUser: () => request('/users/me', { schema: currentUserSchema }),
     generate: (input) =>
@@ -139,6 +217,7 @@ export function createApiClient(): NexusApi {
         body: input,
         schema: generateResponseSchema,
       }),
+    generateStream,
     logout: () =>
       request('/auth/logout', {
         method: 'POST',

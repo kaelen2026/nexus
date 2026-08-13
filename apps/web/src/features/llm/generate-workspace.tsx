@@ -27,6 +27,7 @@ export function GenerateWorkspace({
   const [prompt, setPrompt] = useState('')
   const [maxTokens, setMaxTokens] = useState(1_000)
   const [result, setResult] = useState<GenerateResult>()
+  const [streamedText, setStreamedText] = useState('')
   const [error, setError] = useState<string>()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [isCopied, setIsCopied] = useState(false)
@@ -40,14 +41,17 @@ export function GenerateWorkspace({
     }
 
     setError(undefined)
+    setResult(undefined)
+    setStreamedText('')
     setIsCopied(false)
     setIsSubmitting(true)
     try {
-      const nextResult = await api.generate({
-        model: 'standard',
-        prompt: normalizedPrompt,
-        maxTokens,
-      })
+      const input = { model: 'standard' as const, prompt: normalizedPrompt, maxTokens }
+      const nextResult = api.generateStream
+        ? await api.generateStream(input, (delta) => {
+            setStreamedText((current) => current + delta)
+          })
+        : await api.generate(input)
       setResult(nextResult)
     } catch (cause) {
       if (cause instanceof ApiError && cause.code === 'UNAUTHENTICATED') {
@@ -171,22 +175,27 @@ export function GenerateWorkspace({
         </section>
 
         <section aria-live="polite" className="lg:pt-4">
-          {isSubmitting ? (
+          {isSubmitting && !streamedText ? (
             <div className="flex min-h-80 items-center justify-center border-y bg-background/70 px-6 lg:min-h-[39rem]">
               <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
                 <LoaderCircleIcon className="size-5 animate-spin text-primary" aria-hidden="true" />
                 Nexus 正在生成回答
               </div>
             </div>
-          ) : result ? (
+          ) : result || streamedText ? (
             <div>
               <div className="flex flex-wrap items-center justify-between gap-4">
                 <h2 className="text-xl font-semibold tracking-tight">生成结果</h2>
                 <div className="flex items-center gap-5 text-sm text-muted-foreground">
-                  <span>标准模型 · {result.usage.totalTokens.toLocaleString()} tokens</span>
+                  {result ? (
+                    <span>标准模型 · {result.usage.totalTokens.toLocaleString()} tokens</span>
+                  ) : (
+                    <span role="status">正在生成</span>
+                  )}
                   <button
                     type="button"
                     onClick={copyResult}
+                    disabled={!result}
                     className="flex items-center gap-2 font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary/20"
                   >
                     {isCopied ? (
@@ -199,7 +208,7 @@ export function GenerateWorkspace({
                 </div>
               </div>
               <div className="mt-7 min-h-80 whitespace-pre-wrap rounded-xl border bg-background px-5 py-6 text-[0.98rem] leading-8 sm:px-6 lg:min-h-[39rem] lg:text-lg lg:leading-9">
-                {result.text}
+                {result?.text ?? streamedText}
               </div>
             </div>
           ) : (

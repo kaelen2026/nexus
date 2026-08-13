@@ -10,6 +10,7 @@ export function createGenerate(options: {
   database: DatabaseClient
   billing: BillingUsageAccess
   provider: LlmProvider
+  providerModel?: string
 }) {
   return async (input: GenerateInput): Promise<GenerateResult> => {
     const entitled = await options.billing.getEntitlement({
@@ -18,7 +19,7 @@ export function createGenerate(options: {
     })
     if (!entitled) throw new LlmAccessDeniedError()
 
-    const resolvedModel = resolveModel(input.model)
+    const resolvedModel = resolveModel(input.model, options.providerModel)
     const inputTokens = await options.provider.countInputTokens({
       providerModel: resolvedModel.providerModel,
       prompt: input.prompt,

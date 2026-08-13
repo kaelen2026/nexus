@@ -47,6 +47,7 @@ interface CreateApiRuntimeOptions {
   generateOtp?: () => string
   emailSender?: EmailSender
   llmProvider: LlmProvider
+  llmProviderModel?: string
   smsSender: SmsSender
   metrics?: HttpMetrics
   observabilitySink?: ObservabilitySink
@@ -102,6 +103,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     database: database.client,
     billing,
     provider: options.llmProvider,
+    ...(options.llmProviderModel ? { providerModel: options.llmProviderModel } : {}),
   })
   const users = createUsersModule({ database: database.client, eventBus })
 
@@ -143,6 +145,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     logout: auth.logout,
     logoutAll: auth.logoutAll,
     generate: llm.generate,
+    generateStream: llm.generateStream,
     startOAuth: auth.startOAuth,
     completeOAuth: auth.completeOAuth,
     authWebUrl: environment.APP_PUBLIC_URL,

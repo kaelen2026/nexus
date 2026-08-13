@@ -4,10 +4,14 @@ import { describe, expect, it, vi } from 'vitest'
 import { ApiError, type NexusApi } from '@/lib/api-client'
 import { GenerateWorkspace } from './generate-workspace'
 
-function createApi(generate: NexusApi['generate']): NexusApi {
+function createApi(
+  generate: NexusApi['generate'],
+  generateStream?: NexusApi['generateStream'],
+): NexusApi {
   return {
     getCurrentUser: vi.fn(),
     generate,
+    ...(generateStream ? { generateStream } : {}),
     logout: vi.fn(),
     logoutAll: vi.fn(),
     deleteAccount: vi.fn(),
@@ -22,7 +26,12 @@ describe('GenerateWorkspace', () => {
       text: '1. 明确发布目标\n2. 完成上线检查',
       usage: { inputTokens: 8, outputTokens: 21, totalTokens: 29 },
     })
-    render(<GenerateWorkspace api={createApi(generate)} />)
+    const generateStream = vi.fn(async (_input, onDelta: (text: string) => void) => {
+      onDelta('1. 明确发布目标\n')
+      onDelta('2. 完成上线检查')
+      return await generate()
+    })
+    render(<GenerateWorkspace api={createApi(generate, generateStream)} />)
 
     fireEvent.change(screen.getByLabelText('你想让 Nexus 做什么？'), {
       target: { value: '  帮我整理一份新产品发布检查清单  ' },
@@ -30,11 +39,14 @@ describe('GenerateWorkspace', () => {
     fireEvent.click(screen.getByRole('button', { name: '生成内容' }))
 
     await waitFor(() =>
-      expect(generate).toHaveBeenCalledWith({
-        model: 'standard',
-        prompt: '帮我整理一份新产品发布检查清单',
-        maxTokens: 1_000,
-      }),
+      expect(generateStream).toHaveBeenCalledWith(
+        {
+          model: 'standard',
+          prompt: '帮我整理一份新产品发布检查清单',
+          maxTokens: 1_000,
+        },
+        expect.any(Function),
+      ),
     )
     expect(await screen.findByText(/明确发布目标/)).toBeInTheDocument()
     expect(screen.getByText('标准模型 · 29 tokens')).toBeInTheDocument()

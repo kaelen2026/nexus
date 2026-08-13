@@ -19,5 +19,18 @@ export function createLocalDevelopmentLlmProvider(): LlmProvider {
         },
       }
     },
+    async stream(input) {
+      const text = `Local response: ${input.prompt}`
+      return (async function* () {
+        yield { type: 'delta' as const, text }
+        yield {
+          type: 'completed' as const,
+          usage: {
+            inputTokens: countTokens(input.prompt),
+            outputTokens: countTokens(text),
+          },
+        }
+      })()
+    },
   }
 }

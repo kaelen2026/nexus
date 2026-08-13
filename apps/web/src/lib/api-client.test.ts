@@ -130,6 +130,37 @@ describe('apiClient', () => {
     )
   })
 
+  it('emits text deltas and resolves final usage from a generation stream', async () => {
+    const fetchMock = vi
+      .fn()
+      .mockResolvedValue(
+        new Response(
+          'event: start\ndata: {"requestId":"request-id","model":"standard"}\n\n' +
+            'event: delta\ndata: {"text":"Hello "}\n\n' +
+            'event: delta\ndata: {"text":"back"}\n\n' +
+            'event: completed\ndata: {"usage":{"inputTokens":2,"outputTokens":3,"totalTokens":5}}\n\n',
+          { headers: { 'content-type': 'text/event-stream' } },
+        ),
+      )
+    vi.stubGlobal('fetch', fetchMock)
+    const deltas: string[] = []
+    const generateStream = createApiClient().generateStream
+    expect(generateStream).toBeDefined()
+    if (!generateStream) throw new Error('Expected streaming client')
+
+    await expect(
+      generateStream({ model: 'standard', prompt: 'Hello', maxTokens: 100 }, (text) =>
+        deltas.push(text),
+      ),
+    ).resolves.toEqual({
+      requestId: 'request-id',
+      model: 'standard',
+      text: 'Hello back',
+      usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
+    })
+    expect(deltas).toEqual(['Hello ', 'back'])
+  })
+
   it.each([
     ['logout', '/auth/logout'],
     ['logoutAll', '/auth/logout-all'],
