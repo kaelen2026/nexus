@@ -89,6 +89,8 @@ The same external Account cannot belong to multiple Users. Repeated authenticati
 
 Access tokens use signed JWTs with issuer, audience, subject (`userId`), `accountId`, `sessionId`, issued-at, and expiry claims. Refresh tokens are 256-bit opaque random values. Their persisted representation is an HMAC-SHA-256 hash; plaintext is returned only to the client.
 
+Rotation uses a conditional database update so one stored token can rotate only once. Detection of an already-rotated token commits revocation of the server-side Session and every Refresh Token in that Session before returning an error.
+
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 
 Runtime composition accepts an `SmsSender` through the Auth public API. The server must not mount the production send-OTP path with a logger, no-op, or test fake standing in for SMS. A concrete provider adapter and its configuration are selected in a focused integration increment.
