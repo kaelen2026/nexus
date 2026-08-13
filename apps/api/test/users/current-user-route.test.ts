@@ -81,3 +81,32 @@ describe('GET /users/me', () => {
     })
   })
 })
+
+describe('DELETE /users/me', () => {
+  it('deletes the authenticated account', async () => {
+    const deleteAccount = vi.fn().mockResolvedValue(undefined)
+    const app = createApp({
+      authenticateAccessToken: vi.fn().mockResolvedValue(identity),
+      getCurrentUser: vi.fn(),
+      deleteAccount,
+    })
+
+    const response = await app.request('/users/me', {
+      method: 'DELETE',
+      headers: { authorization: 'Bearer access-token' },
+    })
+
+    expect(response.status).toBe(204)
+    expect(deleteAccount).toHaveBeenCalledWith({ userId: 'user-id' })
+  })
+
+  it('rejects an unauthenticated request', async () => {
+    const deleteAccount = vi.fn()
+    const app = createApp({ getCurrentUser: vi.fn(), deleteAccount })
+
+    const response = await app.request('/users/me', { method: 'DELETE' })
+
+    expect(response.status).toBe(401)
+    expect(deleteAccount).not.toHaveBeenCalled()
+  })
+})

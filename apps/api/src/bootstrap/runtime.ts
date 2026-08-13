@@ -135,6 +135,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
     getCurrentUser: users.getCurrentUser,
+    deleteAccount: auth.deleteAccount,
     getProfile: users.getProfile,
     updateProfile: users.updateProfile,
     getSettings: users.getSettings,

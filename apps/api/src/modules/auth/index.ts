@@ -1,4 +1,5 @@
 export {
+  AccountDisabledError,
   InvalidCredentialsError,
   InvalidOAuthCallbackError,
   InvalidOtpError,
@@ -18,6 +19,7 @@ export { completePhoneAuthentication } from './service/complete-phone-authentica
 export { createEmailIdentity } from './service/create-email-identity.js'
 export { createOAuthIdentity } from './service/create-oauth-identity.js'
 export { createPhoneIdentity } from './service/create-phone-identity.js'
+export { deleteAccount } from './service/delete-account.js'
 export { createSendEmailOtp, createVerifyEmailOtp } from './service/email-otp.js'
 export { createEmailPasswordLogin, createResetEmailPassword } from './service/email-password.js'
 export { revokeAllSessions, revokeSession } from './service/logout.js'
@@ -28,6 +30,7 @@ export type {
   AuthenticateAccessToken,
   AuthTokenPair,
   CompleteOAuth,
+  DeleteAccount,
   EmailSender,
   LoginWithEmailPassword,
   Logout,

@@ -4,6 +4,7 @@ import { z } from 'zod'
 import type { GatewayEnvironment } from '../../../gateway/index.js'
 import { UserNotFoundError, UserSuspendedError } from '../errors.js'
 import type {
+  DeleteAccount,
   GetCurrentUser,
   GetProfile,
   GetSettings,
@@ -31,6 +32,7 @@ export function createUsersRouter(options: {
   updateProfile?: UpdateProfile
   getSettings?: GetSettings
   updateSettings?: UpdateSettings
+  deleteAccount?: DeleteAccount
 }) {
   const router = new Hono<GatewayEnvironment>()
 
@@ -63,6 +65,19 @@ export function createUsersRouter(options: {
       throw error
     }
   })
+
+  if (options.deleteAccount) {
+    router.delete('/me', async (context) => {
+      const subject = userId(context)
+      if (!subject)
+        return context.json(
+          { error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } },
+          401,
+        )
+      await options.deleteAccount?.({ userId: subject })
+      return context.body(null, 204)
+    })
+  }
 
   if (options.getProfile) {
     router.get('/me/profile', async (context) => {

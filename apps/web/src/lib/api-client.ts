@@ -43,6 +43,7 @@ export interface NexusApi {
   generate(input: GenerateInput): Promise<GenerateResult>
   logout(): Promise<void>
   logoutAll(): Promise<void>
+  deleteAccount(): Promise<void>
 }
 
 const errorMessages: Record<string, string> = {
@@ -65,7 +66,7 @@ export class ApiError extends Error {
 }
 
 interface RequestOptions<T> {
-  method?: 'GET' | 'POST'
+  method?: 'GET' | 'POST' | 'DELETE'
   body?: unknown
   schema: z.ZodType<T>
   refreshOnUnauthorized?: boolean
@@ -147,6 +148,12 @@ export function createApiClient(): NexusApi {
     logoutAll: () =>
       request('/auth/logout-all', {
         method: 'POST',
+        schema: z.void(),
+        refreshOnUnauthorized: false,
+      }),
+    deleteAccount: () =>
+      request('/users/me', {
+        method: 'DELETE',
         schema: z.void(),
         refreshOnUnauthorized: false,
       }),
