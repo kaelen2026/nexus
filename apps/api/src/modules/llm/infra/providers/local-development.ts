@@ -6,6 +6,9 @@ function countTokens(text: string): number {
 
 export function createLocalDevelopmentLlmProvider(): LlmProvider {
   return {
+    async countInputTokens(input) {
+      return countTokens(input.prompt)
+    },
     async generate(input) {
       const text = `Local response: ${input.prompt}`
       return {

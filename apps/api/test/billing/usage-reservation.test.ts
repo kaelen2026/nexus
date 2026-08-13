@@ -63,6 +63,23 @@ describe('Billing usage reservation', () => {
     billing.close()
   })
 
+  it('records consumed usage when a provider slightly exceeds its reservation', async () => {
+    const userId = '00000000-0000-4000-8000-000000000015'
+    const billing = await createFreeUser(userId)
+    const reservation = await billing.reserveUsage({ userId, key: 'llm.tokens', units: 100 })
+    expect(reservation).not.toBeNull()
+    if (!reservation) throw new Error('Expected usage reservation')
+
+    await billing.commitUsage({ reservationId: reservation.reservationId, actualUnits: 105 })
+
+    await expect(billing.getQuota({ userId, key: 'llm.tokens' })).resolves.toEqual({
+      limit: 10_000,
+      used: 105,
+      remaining: 9_895,
+    })
+    billing.close()
+  })
+
   it('serializes concurrent reservations so they cannot overspend quota', async () => {
     const userId = '00000000-0000-4000-8000-000000000014'
     const billing = await createFreeUser(userId)

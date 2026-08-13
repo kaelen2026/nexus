@@ -26,7 +26,7 @@ describe('LLM generate', () => {
       commitUsage: vi.fn(),
       releaseUsage: vi.fn(),
     }
-    const provider = { generate: vi.fn() }
+    const provider = { countInputTokens: vi.fn(), generate: vi.fn() }
     const llm = createLlmModule({ database: database.client, billing, provider })
 
     await expect(
@@ -43,7 +43,7 @@ describe('LLM generate', () => {
       commitUsage: vi.fn(),
       releaseUsage: vi.fn(),
     }
-    const provider = { generate: vi.fn() }
+    const provider = { countInputTokens: vi.fn(), generate: vi.fn() }
     const llm = createLlmModule({ database: database.client, billing, provider })
 
     await expect(
@@ -60,6 +60,7 @@ describe('LLM generate', () => {
       releaseUsage: vi.fn(),
     }
     const provider = {
+      countInputTokens: vi.fn().mockResolvedValue(12),
       generate: vi.fn().mockResolvedValue({
         text: 'Hello back',
         usage: { inputTokens: 12, outputTokens: 8 },
@@ -83,7 +84,7 @@ describe('LLM generate', () => {
     expect(provider.generate).toHaveBeenCalledWith({
       providerModel: 'fake-standard',
       prompt: 'Hello',
-      maxTokens: 100,
+      maxTokens: 88,
     })
     expect(billing.commitUsage).toHaveBeenCalledWith({
       reservationId: 'reservation-id',
@@ -100,7 +101,10 @@ describe('LLM generate', () => {
       commitUsage: vi.fn(),
       releaseUsage: vi.fn().mockResolvedValue(undefined),
     }
-    const provider = { generate: vi.fn().mockRejectedValue(providerError) }
+    const provider = {
+      countInputTokens: vi.fn().mockResolvedValue(12),
+      generate: vi.fn().mockRejectedValue(providerError),
+    }
     const llm = createLlmModule({ database: database.client, billing, provider })
 
     const result = llm.generate({
@@ -113,5 +117,25 @@ describe('LLM generate', () => {
     await expect(result).rejects.toBeInstanceOf(LlmProviderError)
     expect(billing.commitUsage).not.toHaveBeenCalled()
     expect(billing.releaseUsage).toHaveBeenCalledWith({ reservationId: 'reservation-id' })
+  })
+
+  it('rejects a total-token budget that cannot fit the prompt before reserving usage', async () => {
+    const billing = {
+      getEntitlement: vi.fn().mockResolvedValue(true),
+      reserveUsage: vi.fn(),
+      commitUsage: vi.fn(),
+      releaseUsage: vi.fn(),
+    }
+    const provider = {
+      countInputTokens: vi.fn().mockResolvedValue(100),
+      generate: vi.fn(),
+    }
+    const llm = createLlmModule({ database: database.client, billing, provider })
+
+    await expect(
+      llm.generate({ userId, model: 'standard', prompt: 'A large prompt', maxTokens: 100 }),
+    ).rejects.toBeInstanceOf(LlmAccessDeniedError)
+    expect(billing.reserveUsage).not.toHaveBeenCalled()
+    expect(provider.generate).not.toHaveBeenCalled()
   })
 })

@@ -90,11 +90,10 @@ pnpm --filter @nexus/api dev
 curl http://localhost:3000/health
 ```
 
-At present that entry point mounts only `GET /health`. The full composition function
-`createApiRuntime` exists and wires Auth, Users, Billing, LLM, PostgreSQL, Redis, migrations, and
-routers, but it requires concrete production `SmsSender` and `LlmProvider` adapters that have not
-been selected. Do not expect browser login or generation to work against the default API process
-until that runtime integration is completed.
+That entry point loads the complete local runtime: Auth, Users, Billing, LLM, PostgreSQL, Redis,
+migrations, routers, the local message inboxes, and the deterministic LLM adapter. Browser login and
+generation therefore work against the default development API without external provider
+credentials. Production provider adapters and deployment composition remain separate work.
 
 ## Verification
 

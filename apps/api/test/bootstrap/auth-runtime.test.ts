@@ -41,7 +41,7 @@ describe('Auth runtime composition', () => {
         TRUSTED_ORIGINS: 'https://app.nexus.test',
       },
       generateOtp: () => '123456',
-      llmProvider: { generate },
+      llmProvider: { countInputTokens: vi.fn().mockResolvedValue(7), generate },
       smsSender: { sendOtp: sendSms },
     })
 
@@ -122,7 +122,7 @@ describe('Auth runtime composition', () => {
       expect(generate).toHaveBeenCalledWith({
         providerModel: 'fake-standard',
         prompt: 'Hello runtime',
-        maxTokens: 100,
+        maxTokens: 93,
       })
 
       const [usage] = await database.client.execute<{
