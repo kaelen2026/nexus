@@ -12,7 +12,7 @@
   "dependencies": {
     "@hono/node-server": "^1.19.0",
     "@nexus/database": "workspace:*",
-    "drizzle-orm": "^0.44.4",
+    "drizzle-orm": "^0.45.2",
     "hono": "^4.9.2",
     "jose": "^6.2.3",
     "redis": "^5.8.2",
