@@ -44,6 +44,8 @@ Credential -> Auth Account -> Create User -> Bind Account -> Create Session
 
 After durable User creation, Users publishes `users.user-created`. Billing consumes the fact to assign a free subscription. Users must not call Billing, which avoids a Users/Billing dependency cycle.
 
+Users constructs and publishes the event only after the User/Account/Session transaction commits. Re-authentication of an existing Account does not republish `users.user-created`.
+
 ## Public API
 
 Potential exports include `createUser`, `getUserStatus`, and a minimal user summary when another module genuinely needs them. Profile repos and internal update workflows stay private. `GET /users/me` obtains `userId` from `Identity.subject`.

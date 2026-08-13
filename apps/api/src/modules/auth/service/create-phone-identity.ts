@@ -15,22 +15,25 @@ interface PhoneIdentity {
   sessionId: string
 }
 
-export function createPhoneIdentity(
+export async function createPhoneIdentity(
   database: DatabaseClient,
   input: CreatePhoneIdentityInput,
+  options?: { publishUserCreated?: (userId: string) => Promise<void> },
 ): Promise<PhoneIdentity> {
   const phoneNumber = normalizePhoneNumber(input.phoneNumber)
 
-  return database.transaction(async (transaction) => {
+  const { userCreated, ...identity } = await database.transaction(async (transaction) => {
     const existingAccount = await findPhoneAccount(transaction, phoneNumber)
     let userId = existingAccount?.userId
     let accountId = existingAccount?.id
 
+    let userCreated = false
     if (!userId || !accountId) {
       const user = await createUser(transaction)
       const account = await insertPhoneAccount(transaction, { userId: user.userId, phoneNumber })
       userId = user.userId
       accountId = account.id
+      userCreated = true
     }
 
     const session = await insertSession(transaction, {
@@ -39,6 +42,8 @@ export function createPhoneIdentity(
       expiresAt: input.sessionExpiresAt,
     })
 
-    return { userId, accountId, sessionId: session.id }
+    return { userId, accountId, sessionId: session.id, userCreated }
   })
+  if (userCreated) await options?.publishUserCreated?.(identity.userId)
+  return identity
 }

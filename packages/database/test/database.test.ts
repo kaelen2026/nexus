@@ -18,18 +18,28 @@ describe('database', () => {
     expect(result[0]?.value).toBe(1)
   })
 
-  it('applies identity migrations with module-owned constraints', async () => {
+  it('applies module-owned schemas and constraints', async () => {
     await migrateDatabase(database.client)
 
     const tables = await database.client.execute<{ table_name: string }>(sql`
       select table_name
       from information_schema.tables
       where table_schema = 'public'
-        and table_name in ('users', 'auth_accounts', 'auth_sessions')
+        and table_name in (
+          'users', 'auth_accounts', 'auth_sessions',
+          'billing_plans', 'billing_subscriptions', 'billing_event_receipts'
+        )
       order by table_name
     `)
 
-    expect(tables.map((row) => row.table_name)).toEqual(['auth_accounts', 'auth_sessions', 'users'])
+    expect(tables.map((row) => row.table_name)).toEqual([
+      'auth_accounts',
+      'auth_sessions',
+      'billing_event_receipts',
+      'billing_plans',
+      'billing_subscriptions',
+      'users',
+    ])
 
     const constraints = await database.client.execute<{ constraint_name: string }>(sql`
       select constraint_name

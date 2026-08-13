@@ -62,6 +62,8 @@ Reservations prevent concurrent expensive operations from overspending quota. Co
 
 Billing idempotently consumes `users.user-created` and creates the free subscription exactly once. It may publish facts such as `billing.subscription-activated` after durable state changes.
 
+The initial implementation uses a synchronous in-memory EventBus. The consumer transaction first claims the event in `billing_event_receipts`, ensures the `free` Plan exists, and then creates the User's unique active Subscription. Duplicate delivery of the same event and delivery under a different event ID are both safe because receipt and User subscription uniqueness are enforced in PostgreSQL.
+
 ## Public API
 
 LLM may import entitlement, quota, reserve, commit, and release capabilities only through `billing/index.ts`. It must never access Billing repos or tables.

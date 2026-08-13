@@ -15,6 +15,13 @@
       "when": 1786594892590,
       "tag": "0001_hot_arclight",
       "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "7",
+      "when": 1786596701364,
+      "tag": "0002_easy_groot",
+      "breakpoints": true
     }
   ]
 }
