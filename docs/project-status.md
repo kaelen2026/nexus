@@ -40,7 +40,7 @@ runnable.
 ## Deliberately deferred
 
 - Streaming generation, channel selection/fallback, provider pricing, and provider-cost accounting.
-- Password, API-key, account-linking, profile, and settings workflows.
+- Password, API-key, and account-linking workflows.
 - Payment-provider integration and paid-plan management.
 - A generic outbox or external event broker beyond the current Users-owned outbox.
 - Rate limiting.

@@ -26,7 +26,14 @@ import {
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
 import { createLlmRouter, type Generate } from './modules/llm/index.js'
-import { createUsersRouter, type GetCurrentUser } from './modules/users/index.js'
+import {
+  createUsersRouter,
+  type GetCurrentUser,
+  type GetProfile,
+  type GetSettings,
+  type UpdateProfile,
+  type UpdateSettings,
+} from './modules/users/index.js'
 
 interface AppDependencies {
   authenticateAccessToken?: AuthenticateAccessToken
@@ -42,6 +49,10 @@ interface AppDependencies {
   resetEmailPassword?: ResetEmailPassword
   getCurrentUser?: GetCurrentUser
   deleteAccount?: DeleteAccount
+  getProfile?: GetProfile
+  updateProfile?: UpdateProfile
+  getSettings?: GetSettings
+  updateSettings?: UpdateSettings
   generate?: Generate
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
@@ -95,6 +106,10 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
       createUsersRouter({
         getCurrentUser: dependencies.getCurrentUser,
         ...(dependencies.deleteAccount ? { deleteAccount: dependencies.deleteAccount } : {}),
+        ...(dependencies.getProfile ? { getProfile: dependencies.getProfile } : {}),
+        ...(dependencies.updateProfile ? { updateProfile: dependencies.updateProfile } : {}),
+        ...(dependencies.getSettings ? { getSettings: dependencies.getSettings } : {}),
+        ...(dependencies.updateSettings ? { updateSettings: dependencies.updateSettings } : {}),
       }),
     )
   }
