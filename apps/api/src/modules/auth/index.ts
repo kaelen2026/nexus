@@ -1,6 +1,7 @@
 export { InvalidOtpError } from './errors.js'
 export { createAuthModule } from './module.js'
 export { createAuthRouter } from './router/routes.js'
+export { createPhoneIdentity } from './service/create-phone-identity.js'
 export { createSendOtp } from './service/send-otp.js'
 export { createVerifyOtp } from './service/verify-otp.js'
 export type { SendOtp, SmsSender } from './types.js'

@@ -26,8 +26,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Secure OTP generation and hashing | done | PR #8 |
 | Auth runtime composition factory | done | PR #9 |
 | Atomic OTP verification and consumption | done | PR #10 |
-| Identity schemas and migrations | in progress | Current feature PR |
-| Transactional User + Account + Session creation | next | Not started |
+| Identity schemas and migrations | done | PR #11 |
+| Transactional User + Account + Session creation | in progress | Current feature PR |
+| Verify OTP orchestration and HTTP endpoint | next | Not started |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.
