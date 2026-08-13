@@ -40,7 +40,6 @@ interface CreateApiRuntimeOptions {
   env: Record<string, string | undefined>
   generateOtp?: () => string
   emailSender?: EmailSender
-  emailSender?: EmailSender
   llmProvider: LlmProvider
   smsSender: SmsSender
 }
