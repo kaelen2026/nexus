@@ -6,6 +6,10 @@ LLM owns model resolution, provider/channel selection, provider adapters, reques
 
 ## Intended Shape
 
+The current implementation contains the generate router/service, model resolver, request repo, and
+provider protocol. Streaming, channel selection, concrete provider adapters, pricing, health, and
+provider-cost accounting shown below are deferred.
+
 ```text
 llm/
 ├── router/

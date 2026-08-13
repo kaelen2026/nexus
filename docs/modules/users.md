@@ -28,7 +28,12 @@ Only create these files when their use cases are implemented.
 
 ## Owned Data
 
+Currently persisted:
+
 - `users`
+
+Reserved for future profile/settings behavior, but not present in the current schema:
+
 - `user_profiles`
 - `user_settings`
 

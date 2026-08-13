@@ -4,7 +4,9 @@
 
 Use a direct module service call when the caller needs a synchronous result. Publish an event only for a fact that has already occurred.
 
-Initial delivery is in-memory and at-least-once. Every consumer is idempotent. Event contracts are transport-independent so an in-memory bus can evolve to an outbox and external broker.
+Initial delivery is synchronous and in-memory. The bus itself does not retry, persist, or provide
+at-least-once delivery; consumers are nevertheless designed to be idempotent so the transport can
+later evolve to an at-least-once outbox/broker without changing business effects.
 
 ## Envelope
 
@@ -35,6 +37,11 @@ interface UserCreatedPayload {
 ```
 
 Billing consumes this event and assigns the free subscription exactly once, using `eventId` or the business uniqueness constraint for idempotency.
+
+## Planned Events
+
+The following names describe future contracts; they are not currently declared or published in
+source.
 
 ### `billing.subscription-activated`
 

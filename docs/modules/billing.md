@@ -34,8 +34,12 @@ billing/
 - `billing_plan_entitlements`
 - `billing_plan_quotas`
 - `billing_grants`
+- `billing_event_receipts`
 - `billing_usage_records`
 - `billing_usage_reservations`
+
+`billing_grants` is reserved by the model but is not present in the current schema. Every other
+table listed above is persisted.
 
 ## Concepts
 
