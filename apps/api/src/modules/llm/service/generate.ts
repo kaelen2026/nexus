@@ -1,4 +1,4 @@
-import { LlmAccessDeniedError } from '../errors.js'
+import { LlmAccessDeniedError, LlmProviderError } from '../errors.js'
 import type { LlmProvider } from '../infra/providers/types.js'
 import type { BillingUsageAccess, GenerateInput, GenerateResult } from '../types.js'
 import { resolveModel } from './model-resolver.js'
@@ -19,25 +19,27 @@ export function createGenerate(options: { billing: BillingUsageAccess; provider:
     if (!reservation) throw new LlmAccessDeniedError()
 
     const resolvedModel = resolveModel(input.model)
+    let response: Awaited<ReturnType<LlmProvider['generate']>>
     try {
-      const response = await options.provider.generate({
+      response = await options.provider.generate({
         providerModel: resolvedModel.providerModel,
         prompt: input.prompt,
         maxTokens: input.maxTokens,
       })
-      const totalTokens = response.usage.inputTokens + response.usage.outputTokens
-      await options.billing.commitUsage({
-        reservationId: reservation.reservationId,
-        actualUnits: totalTokens,
-      })
-      return {
-        model: input.model,
-        text: response.text,
-        usage: { ...response.usage, totalTokens },
-      }
     } catch (error) {
       await options.billing.releaseUsage({ reservationId: reservation.reservationId })
-      throw error
+      throw new LlmProviderError({ cause: error })
+    }
+
+    const totalTokens = response.usage.inputTokens + response.usage.outputTokens
+    await options.billing.commitUsage({
+      reservationId: reservation.reservationId,
+      actualUnits: totalTokens,
+    })
+    return {
+      model: input.model,
+      text: response.text,
+      usage: { ...response.usage, totalTokens },
     }
   }
 }

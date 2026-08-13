@@ -15,6 +15,7 @@ import {
   type SendOtp,
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
+import { createLlmRouter, type Generate } from './modules/llm/index.js'
 import { createUsersRouter, type GetCurrentUser } from './modules/users/index.js'
 
 interface AppDependencies {
@@ -26,6 +27,7 @@ interface AppDependencies {
   logout?: Logout
   logoutAll?: LogoutAll
   getCurrentUser?: GetCurrentUser
+  generate?: Generate
 }
 
 export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvironment> {
@@ -53,6 +55,9 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
   }
   if (dependencies.getCurrentUser) {
     app.route('/users', createUsersRouter({ getCurrentUser: dependencies.getCurrentUser }))
+  }
+  if (dependencies.generate) {
+    app.route('/llm', createLlmRouter({ generate: dependencies.generate }))
   }
   return app
 }
