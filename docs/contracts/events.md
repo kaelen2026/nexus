@@ -4,9 +4,11 @@
 
 Use a direct module service call when the caller needs a synchronous result. Publish an event only for a fact that has already occurred.
 
-Initial delivery is synchronous and in-memory. The bus itself does not retry, persist, or provide
-at-least-once delivery; consumers are nevertheless designed to be idempotent so the transport can
-later evolve to an at-least-once outbox/broker without changing business effects.
+Initial delivery is synchronous and in-memory. The `users.user-created` producer persists its event
+in a Users-owned transactional outbox, delivers it immediately after commit, and replays pending
+events during runtime startup. Consumers remain idempotent because a crash between handling and
+marking the event published can cause duplicate delivery. Other event types need their own durable
+producer policy when introduced.
 
 ## Envelope
 
