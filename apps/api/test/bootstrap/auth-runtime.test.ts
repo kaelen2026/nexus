@@ -16,7 +16,7 @@ beforeAll(async () => {
 
 beforeEach(async () => {
   await database.client.execute(
-    sql`truncate billing_event_receipts, billing_subscriptions, billing_plans, auth_sessions, auth_accounts, users cascade`,
+    sql`truncate llm_requests, billing_usage_records, billing_usage_reservations, billing_event_receipts, billing_subscriptions, billing_plans, auth_sessions, auth_accounts, users cascade`,
   )
 })
 
@@ -28,6 +28,10 @@ afterAll(async () => {
 describe('Auth runtime composition', () => {
   it('wires the HTTP route through Redis and closes owned resources', async () => {
     const sendSms = vi.fn()
+    const generate = vi.fn().mockResolvedValue({
+      text: 'Runtime provider response',
+      usage: { inputTokens: 7, outputTokens: 5 },
+    })
     const runtime = await createApiRuntime({
       env: {
         DATABASE_URL: databaseUrl,
@@ -37,6 +41,7 @@ describe('Auth runtime composition', () => {
         TRUSTED_ORIGINS: 'https://app.nexus.test',
       },
       generateOtp: () => '123456',
+      llmProvider: { generate },
       smsSender: { sendOtp: sendSms },
     })
 
@@ -96,6 +101,50 @@ describe('Auth runtime composition', () => {
         status: 'active',
         createdAt: expect.any(String),
         updatedAt: expect.any(String),
+      })
+
+      const generateResponse = await runtime.app.request('/llm/generate', {
+        method: 'POST',
+        headers: {
+          'content-type': 'application/json',
+          cookie: accessCookie ?? '',
+          origin: 'https://app.nexus.test',
+        },
+        body: JSON.stringify({ model: 'standard', prompt: 'Hello runtime', maxTokens: 100 }),
+      })
+      expect(generateResponse.status).toBe(200)
+      await expect(generateResponse.json()).resolves.toEqual({
+        requestId: expect.any(String),
+        model: 'standard',
+        text: 'Runtime provider response',
+        usage: { inputTokens: 7, outputTokens: 5, totalTokens: 12 },
+      })
+      expect(generate).toHaveBeenCalledWith({
+        providerModel: 'fake-standard',
+        prompt: 'Hello runtime',
+        maxTokens: 100,
+      })
+
+      const [usage] = await database.client.execute<{
+        requestStatus: string
+        reservationStatus: string
+        actualUnits: number
+        recordedUnits: number
+      }>(sql`
+        select
+          r.status as "requestStatus",
+          reservation.status as "reservationStatus",
+          reservation.actual_units as "actualUnits",
+          usage.units as "recordedUnits"
+        from llm_requests r
+        cross join billing_usage_reservations reservation
+        join billing_usage_records usage on usage.reservation_id = reservation.id
+      `)
+      expect(usage).toEqual({
+        requestStatus: 'succeeded',
+        reservationStatus: 'committed',
+        actualUnits: 12,
+        recordedUnits: 12,
       })
 
       const refreshResponse = await runtime.app.request('/auth/refresh', {

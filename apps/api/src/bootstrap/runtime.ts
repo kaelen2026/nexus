@@ -4,6 +4,7 @@ import { z } from 'zod'
 import { createApp } from '../app.js'
 import { createAuthModule, type SmsSender } from '../modules/auth/index.js'
 import { createBillingModule } from '../modules/billing/index.js'
+import { createLlmModule, type LlmProvider } from '../modules/llm/index.js'
 import { createUsersModule } from '../modules/users/index.js'
 import { createInMemoryEventBus } from '../shared/events/index.js'
 
@@ -23,6 +24,7 @@ const runtimeEnvironmentSchema = z.object({
 interface CreateApiRuntimeOptions {
   env: Record<string, string | undefined>
   generateOtp?: () => string
+  llmProvider: LlmProvider
   smsSender: SmsSender
 }
 
@@ -32,6 +34,11 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   await migrateDatabase(database.client)
   const eventBus = createInMemoryEventBus()
   const billing = createBillingModule({ database: database.client, eventBus })
+  const llm = createLlmModule({
+    database: database.client,
+    billing,
+    provider: options.llmProvider,
+  })
   const users = createUsersModule({ database: database.client, eventBus })
 
   let auth: Awaited<ReturnType<typeof createAuthModule>>
@@ -59,6 +66,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     getCurrentUser: users.getCurrentUser,
     logout: auth.logout,
     logoutAll: auth.logoutAll,
+    generate: llm.generate,
   })
 
   return {
