@@ -15,6 +15,7 @@ const identity = {
 describe('POST /llm/generate', () => {
   it('generates for the authenticated User without accepting a caller-supplied userId', async () => {
     const generate = vi.fn().mockResolvedValue({
+      requestId: 'request-id',
       model: 'standard',
       text: 'Hello back',
       usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },
@@ -41,6 +42,7 @@ describe('POST /llm/generate', () => {
       maxTokens: 100,
     })
     await expect(response.json()).resolves.toEqual({
+      requestId: 'request-id',
       model: 'standard',
       text: 'Hello back',
       usage: { inputTokens: 2, outputTokens: 3, totalTokens: 5 },

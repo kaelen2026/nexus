@@ -1,10 +1,22 @@
-import { describe, expect, it, vi } from 'vitest'
+import { createDatabase, migrateDatabase } from '@nexus/database'
+import { sql } from 'drizzle-orm'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import {
   createLlmModule,
   LlmAccessDeniedError,
   LlmProviderError,
 } from '../../src/modules/llm/index.js'
+
+const database = createDatabase({
+  url: process.env.DATABASE_URL ?? 'postgresql://nexus:nexus@localhost:5432/nexus',
+})
+
+beforeAll(async () => migrateDatabase(database.client))
+beforeEach(async () => database.client.execute(sql`truncate llm_requests cascade`))
+afterAll(async () => database.close())
+
+const userId = '00000000-0000-4000-8000-000000000031'
 
 describe('LLM generate', () => {
   it('does not reserve usage or invoke the provider without the generate entitlement', async () => {
@@ -15,10 +27,10 @@ describe('LLM generate', () => {
       releaseUsage: vi.fn(),
     }
     const provider = { generate: vi.fn() }
-    const llm = createLlmModule({ billing, provider })
+    const llm = createLlmModule({ database: database.client, billing, provider })
 
     await expect(
-      llm.generate({ userId: 'user-id', model: 'standard', prompt: 'Hello', maxTokens: 100 }),
+      llm.generate({ userId, model: 'standard', prompt: 'Hello', maxTokens: 100 }),
     ).rejects.toBeInstanceOf(LlmAccessDeniedError)
     expect(billing.reserveUsage).not.toHaveBeenCalled()
     expect(provider.generate).not.toHaveBeenCalled()
@@ -32,10 +44,10 @@ describe('LLM generate', () => {
       releaseUsage: vi.fn(),
     }
     const provider = { generate: vi.fn() }
-    const llm = createLlmModule({ billing, provider })
+    const llm = createLlmModule({ database: database.client, billing, provider })
 
     await expect(
-      llm.generate({ userId: 'user-id', model: 'standard', prompt: 'Hello', maxTokens: 100 }),
+      llm.generate({ userId, model: 'standard', prompt: 'Hello', maxTokens: 100 }),
     ).rejects.toBeInstanceOf(LlmAccessDeniedError)
     expect(provider.generate).not.toHaveBeenCalled()
   })
@@ -53,17 +65,18 @@ describe('LLM generate', () => {
         usage: { inputTokens: 12, outputTokens: 8 },
       }),
     }
-    const llm = createLlmModule({ billing, provider })
+    const llm = createLlmModule({ database: database.client, billing, provider })
 
     await expect(
-      llm.generate({ userId: 'user-id', model: 'standard', prompt: 'Hello', maxTokens: 100 }),
+      llm.generate({ userId, model: 'standard', prompt: 'Hello', maxTokens: 100 }),
     ).resolves.toEqual({
+      requestId: expect.any(String),
       model: 'standard',
       text: 'Hello back',
       usage: { inputTokens: 12, outputTokens: 8, totalTokens: 20 },
     })
     expect(billing.reserveUsage).toHaveBeenCalledWith({
-      userId: 'user-id',
+      userId,
       key: 'llm.tokens',
       units: 100,
     })
@@ -88,10 +101,10 @@ describe('LLM generate', () => {
       releaseUsage: vi.fn().mockResolvedValue(undefined),
     }
     const provider = { generate: vi.fn().mockRejectedValue(providerError) }
-    const llm = createLlmModule({ billing, provider })
+    const llm = createLlmModule({ database: database.client, billing, provider })
 
     const result = llm.generate({
-      userId: 'user-id',
+      userId,
       model: 'standard',
       prompt: 'Hello',
       maxTokens: 100,
