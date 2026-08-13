@@ -1,6 +1,7 @@
 import type { DatabaseClient } from '@nexus/database'
 
 import { createUser } from '../../users/index.js'
+import { AccountDisabledError } from '../errors.js'
 import {
   findAccount,
   findOAuthAccount,
@@ -26,6 +27,7 @@ export async function createOAuthIdentity(
       input.provider,
       input.providerSubject,
     )
+    if (existingAccount?.status === 'disabled') throw new AccountDisabledError()
     let userId = existingAccount?.userId
     let accountId = existingAccount?.id
     let userCreated = false
@@ -34,6 +36,7 @@ export async function createOAuthIdentity(
       const emailAccount = input.verifiedEmail
         ? await findAccount(transaction, 'email', normalizeEmail(input.verifiedEmail))
         : undefined
+      if (emailAccount?.status === 'disabled') throw new AccountDisabledError()
       const user = emailAccount ? undefined : await createUser(transaction)
       const linkedUserId = emailAccount?.userId ?? user?.userId
       if (!linkedUserId) throw new Error('Failed to resolve User')

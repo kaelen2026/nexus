@@ -1,6 +1,7 @@
 import type { DatabaseClient } from '@nexus/database'
 
 import { createUser } from '../../users/index.js'
+import { AccountDisabledError } from '../errors.js'
 import { findPhoneAccount, insertPhoneAccount, insertSession } from '../repo/identity.repo.js'
 import { normalizePhoneNumber } from './phone-number.js'
 
@@ -24,6 +25,7 @@ export async function createPhoneIdentity(
 
   const { userCreated, ...identity } = await database.transaction(async (transaction) => {
     const existingAccount = await findPhoneAccount(transaction, phoneNumber)
+    if (existingAccount?.status === 'disabled') throw new AccountDisabledError()
     let userId = existingAccount?.userId
     let accountId = existingAccount?.id
 

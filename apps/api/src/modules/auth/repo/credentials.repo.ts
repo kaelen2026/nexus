@@ -12,7 +12,13 @@ export async function findEmailPassword(database: DatabaseClient, email: string)
     })
     .from(authAccounts)
     .innerJoin(authCredentials, eq(authCredentials.accountId, authAccounts.id))
-    .where(and(eq(authAccounts.provider, 'email'), eq(authAccounts.providerSubject, email)))
+    .where(
+      and(
+        eq(authAccounts.provider, 'email'),
+        eq(authAccounts.providerSubject, email),
+        eq(authAccounts.status, 'active'),
+      ),
+    )
     .limit(1)
   return result
 }

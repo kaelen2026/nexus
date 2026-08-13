@@ -22,3 +22,10 @@ export async function findUserById(database: DatabaseClient, userId: string) {
     .limit(1)
   return user
 }
+
+export async function markUserDeleted(database: DatabaseClient, userId: string): Promise<void> {
+  await database
+    .update(users)
+    .set({ status: 'deleted', updatedAt: new Date() })
+    .where(eq(users.id, userId))
+}

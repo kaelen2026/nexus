@@ -29,15 +29,17 @@ Billing consumes it to create the free subscription, avoiding a Users/Billing cy
 
 ## Gateway and Request Context
 
-Gateway is the intended home for request IDs/context, authentication, authorization, rate limiting,
-security, error mapping, structured logs, metrics, and tracing. Today it implements request context,
-access-token/cookie authentication, trusted-origin enforcement, and CORS. Rate limiting, structured
-application logging, metrics, and tracing remain deferred. Gateway has no subscription, quota,
-profile, or LLM-routing logic and does not access business data directly.
+Gateway owns request IDs/context, authentication, authorization, rate limiting, security, error
+mapping, structured logs, metrics, and tracing. It implements request context, access-token/cookie
+authentication, trusted-origin enforcement, CORS, and HTTP observability. Rate limiting remains
+deferred. Gateway has no subscription, quota, profile, or LLM-routing logic and does not access
+business data directly.
 
 ```ts
 interface RequestContext {
   requestId: string
+  traceId: string
+  spanId: string
   identity: {
     type: 'user' | 'api_key' | 'service'
     subject: string
@@ -53,6 +55,12 @@ interface RequestContext {
 For user identities, `identity.subject` is the stable `userId`.
 
 Authentication accepts either an `Authorization: Bearer` access token or the Auth-owned access cookie. Bearer credentials take precedence and remain suitable for non-browser clients. Cookie credentials are subject to trusted-Origin enforcement on non-safe HTTP methods, including refresh requests; invalid credentials and origins use stable, non-disclosing responses. The same allowlist drives credentialed CORS, and every response carries the generated `x-request-id`. Gateway reads Auth protocol details only through `modules/auth/index.ts`.
+
+HTTP observability emits one structured completion/failure log and one server span per request, and
+records a bounded-label request counter and duration histogram exposed at `GET /metrics`. Incoming
+valid W3C `traceparent` headers continue the trace; responses return the current trace context. Route
+templates, rather than raw URLs, are used as metric and log dimensions. Authorization, cookies,
+query strings, request bodies, and exception messages are never recorded by this layer.
 
 ## Identity, Tokens, and Data Ownership
 
@@ -79,9 +87,11 @@ Provider Usage, Billing Usage, and Provider Cost remain distinct. LLM owns provi
 
 ## Events, Observability, and Verification
 
-Use direct service calls for results and events for facts. The current in-memory bus is synchronous
-and non-durable. Consumers should remain idempotent so a future transactional outbox and external
-broker can provide at-least-once delivery without changing business effects or contracts.
+Use direct service calls for results and events for facts. The current in-memory bus is synchronous.
+Users persists `users.user-created` in its transactional outbox and replays pending deliveries
+during startup, providing durable at-least-once delivery for that event without an external broker.
+Consumers remain idempotent because delivery and the published marker cannot be atomic across
+modules.
 
 Correlate structured logs, metrics, traces, audit, and cost by relevant request, correlation, event, LLM request, reservation, session, and user IDs. Never log passwords, OTPs, tokens, API keys, Authorization headers, provider secrets, or full prompts by default.
 
@@ -124,4 +134,7 @@ against importing the Redis SDK directly:
 
 ## Deferred Architecture
 
-Do not introduce microservices, Kubernetes, a service mesh, Kafka, service discovery, repository interfaces for every repo, broad mapper/DTO layers, or speculative worker infrastructure. The in-memory event bus may evolve to a transactional outbox and external broker only when delivery requirements justify it.
+Do not introduce microservices, Kubernetes, a service mesh, Kafka, service discovery, repository
+interfaces for every repo, broad mapper/DTO layers, or speculative worker infrastructure. Add a
+generic outbox dispatcher or external broker only when delivery volume or additional event types
+justify evolving beyond the current Users-owned outbox.

@@ -39,3 +39,10 @@ export class InvalidCredentialsError extends Error {
     this.name = 'InvalidCredentialsError'
   }
 }
+
+export class AccountDisabledError extends Error {
+  constructor() {
+    super('Account is disabled')
+    this.name = 'AccountDisabledError'
+  }
+}

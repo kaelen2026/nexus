@@ -12,6 +12,7 @@ import { completePhoneAuthentication } from './service/complete-phone-authentica
 import { createEmailIdentity } from './service/create-email-identity.js'
 import { createOAuthIdentity } from './service/create-oauth-identity.js'
 import { createPhoneIdentity } from './service/create-phone-identity.js'
+import { deleteAccount } from './service/delete-account.js'
 import { createSendEmailOtp, createVerifyEmailOtp } from './service/email-otp.js'
 import { createEmailPasswordLogin, createResetEmailPassword } from './service/email-password.js'
 import { revokeAllSessions, revokeSession } from './service/logout.js'
@@ -162,6 +163,7 @@ export async function createAuthModule(options: AuthModuleOptions) {
     authenticateAccessToken: (token: string) =>
       authenticate(options.database, accessTokens.verify, token),
     logout: (input: { sessionId: string }) => revokeSession(options.database, input.sessionId),
+    deleteAccount: (input: { userId: string }) => deleteAccount(options.database, input),
     logoutAll: (input: { userId: string }) => revokeAllSessions(options.database, input.userId),
     sendOtp: createSendOtp({
       clock: { now: () => new Date() },

@@ -3,6 +3,12 @@ import { z } from 'zod'
 
 import { createApp } from '../app.js'
 import {
+  createConsoleObservabilitySink,
+  createInMemoryHttpMetrics,
+  type HttpMetrics,
+  type ObservabilitySink,
+} from '../gateway/index.js'
+import {
   createAppleOAuthProvider,
   createAuthModule,
   createGoogleOAuthProvider,
@@ -42,10 +48,14 @@ interface CreateApiRuntimeOptions {
   emailSender?: EmailSender
   llmProvider: LlmProvider
   smsSender: SmsSender
+  metrics?: HttpMetrics
+  observabilitySink?: ObservabilitySink
 }
 
 export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const environment = runtimeEnvironmentSchema.parse(options.env)
+  const metrics = options.metrics ?? createInMemoryHttpMetrics()
+  const observabilitySink = options.observabilitySink ?? createConsoleObservabilitySink()
   if (Boolean(environment.GOOGLE_CLIENT_ID) !== Boolean(environment.GOOGLE_CLIENT_SECRET)) {
     throw new Error('GOOGLE_CLIENT_ID and GOOGLE_CLIENT_SECRET must be configured together')
   }
@@ -97,6 +107,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
 
   let auth: Awaited<ReturnType<typeof createAuthModule>>
   try {
+    await users.replayPendingEvents()
     auth = await createAuthModule({
       database: database.client,
       ...(options.emailSender ? { emailSender: options.emailSender } : {}),
@@ -124,16 +135,24 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
     getCurrentUser: users.getCurrentUser,
+    deleteAccount: auth.deleteAccount,
+    getProfile: users.getProfile,
+    updateProfile: users.updateProfile,
+    getSettings: users.getSettings,
+    updateSettings: users.updateSettings,
     logout: auth.logout,
     logoutAll: auth.logoutAll,
     generate: llm.generate,
     startOAuth: auth.startOAuth,
     completeOAuth: auth.completeOAuth,
     authWebUrl: environment.APP_PUBLIC_URL,
+    metrics,
+    observabilitySink,
   })
 
   return {
     app,
+    metrics,
     async close() {
       billing.close()
       await Promise.allSettled([auth.close(), database.close()])

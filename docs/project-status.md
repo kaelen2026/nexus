@@ -16,9 +16,11 @@ source and tests from target architecture described elsewhere.
 | LLM generation | `standard` logical model, entitlement/quota checks, provider seam, normalized response | Service and HTTP tests |
 | LLM requests | Durable processing/succeeded/failed lifecycle without prompt or provider-error persistence | PostgreSQL integration tests |
 | Web workspace | Prompt entry, output limit, generation result, token usage, copy, stable error states | Vitest + Testing Library |
+| HTTP observability | Correlated structured logs, W3C trace propagation, server spans, Prometheus request metrics | Gateway tests |
 
-PostgreSQL schemas and ten committed migrations exist for Users, Auth, Billing, and LLM. Redis is
-used only for short-lived OTP challenges. The event bus is synchronous and in-memory; Billing's
+PostgreSQL schemas and eleven committed migrations exist for Users, Auth, Billing, and LLM. Redis is
+used only for short-lived OTP challenges. The event bus is synchronous and in-memory;
+`users.user-created` has a Users-owned transactional outbox with startup replay, and Billing's
 consumer protects its durable effect with event receipts and database uniqueness.
 
 ## Runtime composition
@@ -32,10 +34,10 @@ deployment entry point remain deferred.
 ## Deliberately deferred
 
 - Streaming generation, channel selection/fallback, provider pricing, and provider-cost accounting.
-- Password, API-key, account-linking, profile, and settings workflows.
+- Password, API-key, and account-linking workflows.
 - Payment-provider integration and paid-plan management.
-- Transactional outbox or external event broker.
-- Rate limiting, structured application logging, metrics, and tracing.
+- A generic outbox or external event broker beyond the current Users-owned outbox.
+- Rate limiting.
 - Additional architecture rules beyond the current service, router, module-public-API, repository
   ownership, dependency-cycle, and bootstrap SDK checks.
 

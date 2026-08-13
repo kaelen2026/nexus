@@ -1,6 +1,7 @@
 import type { DatabaseClient } from '@nexus/database'
 
 import { createUser } from '../../users/index.js'
+import { AccountDisabledError } from '../errors.js'
 import { findAccount, insertAccount, insertSession } from '../repo/identity.repo.js'
 import { normalizeEmail } from './email.js'
 
@@ -12,6 +13,7 @@ export async function createEmailIdentity(
   const email = normalizeEmail(input.email)
   const { userCreated, ...identity } = await database.transaction(async (transaction) => {
     const existingAccount = await findAccount(transaction, 'email', email)
+    if (existingAccount?.status === 'disabled') throw new AccountDisabledError()
     let userId = existingAccount?.userId
     let accountId = existingAccount?.id
     let userCreated = false
