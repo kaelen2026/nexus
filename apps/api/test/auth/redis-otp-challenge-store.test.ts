@@ -38,4 +38,19 @@ describe('Redis OTP challenge store', () => {
       await redis.del(key)
     }
   })
+
+  it('atomically consumes a matching challenge only once', async () => {
+    const keyPrefix = `test:otp:${randomUUID()}`
+    const store = createRedisOtpChallengeStore({ redis, keyPrefix })
+    const challenge = {
+      phoneNumber: '+8613800138000',
+      otpHash: 'hashed-otp',
+      expiresAt: new Date(Date.now() + 300_000),
+    }
+    await store.save(challenge)
+
+    expect(await store.consume(challenge.phoneNumber, 'wrong-hash')).toBe(false)
+    expect(await store.consume(challenge.phoneNumber, challenge.otpHash)).toBe(true)
+    expect(await store.consume(challenge.phoneNumber, challenge.otpHash)).toBe(false)
+  })
 })

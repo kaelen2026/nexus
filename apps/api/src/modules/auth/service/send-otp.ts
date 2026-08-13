@@ -1,4 +1,5 @@
 import type { Clock, OtpChallengeStore, SmsSender } from '../types.js'
+import { normalizePhoneNumber } from './phone-number.js'
 
 interface SendOtpDependencies {
   clock: Clock
@@ -11,10 +12,6 @@ interface SendOtpDependencies {
 
 interface SendOtpInput {
   phoneNumber: string
-}
-
-function normalizePhoneNumber(phoneNumber: string): string {
-  return phoneNumber.replace(/[\s-]/g, '')
 }
 
 export function createSendOtp(dependencies: SendOtpDependencies) {

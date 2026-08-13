@@ -6,6 +6,7 @@ export interface OtpChallenge {
 
 export interface OtpChallengeStore {
   save(challenge: OtpChallenge): Promise<void>
+  consume(phoneNumber: string, otpHash: string): Promise<boolean>
 }
 
 export interface SmsSender {
