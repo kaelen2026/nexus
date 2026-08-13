@@ -11,6 +11,11 @@ function createAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
       sessionMode: 'cookie',
       accessTokenExpiresAt: '2026-08-13T08:15:00.000Z',
     }),
+    sendEmailOtp: vi.fn().mockResolvedValue({ expiresAt: '2026-08-13T08:01:00.000Z' }),
+    verifyEmailOtp: vi.fn().mockResolvedValue({
+      sessionMode: 'cookie',
+      accessTokenExpiresAt: '2026-08-13T08:15:00.000Z',
+    }),
     ...overrides,
   }
 }
@@ -41,6 +46,29 @@ describe('PhoneOtpLogin', () => {
     expect(await screen.findByRole('heading', { name: '输入验证码' })).toBeInTheDocument()
     expect(api.sendOtp).toHaveBeenCalledWith({ phoneNumber: '+86 138 0000 0000' })
     expect(screen.getByText('验证码已发送至 +86 138 **** 0000')).toBeInTheDocument()
+  })
+
+  it('supports email OTP authentication', async () => {
+    const api = createAuthApi()
+    const onAuthenticated = vi.fn()
+    render(<PhoneOtpLogin api={api} onAuthenticated={onAuthenticated} />)
+
+    fireEvent.click(screen.getByRole('button', { name: '邮箱' }))
+    fireEvent.change(screen.getByLabelText('邮箱'), { target: { value: 'Alice@Example.COM' } })
+    fireEvent.click(screen.getByRole('button', { name: '获取验证码' }))
+
+    expect(await screen.findByText('验证码已发送至 Alice@Example.COM')).toBeInTheDocument()
+    expect(api.sendEmailOtp).toHaveBeenCalledWith({ email: 'Alice@Example.COM' })
+
+    fireEvent.change(screen.getByLabelText('6 位验证码'), { target: { value: '123456' } })
+    fireEvent.click(screen.getByRole('button', { name: '继续' }))
+
+    await waitFor(() => expect(onAuthenticated).toHaveBeenCalledOnce())
+    expect(api.verifyEmailOtp).toHaveBeenCalledWith({
+      email: 'Alice@Example.COM',
+      otp: '123456',
+      sessionMode: 'cookie',
+    })
   })
 
   it('rejects an incomplete verification code without sending a request', async () => {

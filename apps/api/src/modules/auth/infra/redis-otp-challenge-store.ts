@@ -14,11 +14,11 @@ export function createRedisOtpChallengeStore(
 
   return {
     async save(challenge) {
-      await options.redis.set(`${keyPrefix}:${challenge.phoneNumber}`, challenge.otpHash, {
+      await options.redis.set(`${keyPrefix}:${challenge.subject}`, challenge.otpHash, {
         expiration: { type: 'PXAT', value: challenge.expiresAt.getTime() },
       })
     },
-    async consume(phoneNumber, otpHash) {
+    async consume(subject, otpHash) {
       const result = await options.redis.eval(
         `
           if redis.call('GET', KEYS[1]) == ARGV[1] then
@@ -28,7 +28,7 @@ export function createRedisOtpChallengeStore(
           return 0
         `,
         {
-          keys: [`${keyPrefix}:${phoneNumber}`],
+          keys: [`${keyPrefix}:${subject}`],
           arguments: [otpHash],
         },
       )

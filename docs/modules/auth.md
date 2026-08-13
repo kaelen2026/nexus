@@ -3,7 +3,7 @@
 ## Responsibility
 
 Auth owns authentication identities, sessions, refresh tokens, and the production of a runtime
-Identity. Phone Accounts are implemented; credentials, passwords, API keys, and account linking are
+Identity. Phone and email Accounts are implemented; passwords, API keys, and account linking are
 future capabilities. Auth does not own the stable business User or user profile.
 
 ```text
@@ -62,14 +62,14 @@ OTP challenges may live in Redis because they are short-lived authentication sta
 
 Redis SDK usage, client creation, connection lifecycle, and OTP challenge persistence stay inside Auth `infra`. Bootstrap may pass `REDIS_URL` through the Auth public composition API, but it must not import or operate the Redis SDK directly.
 
-## Phone OTP Flow
+## Phone and Email OTP Flow
 
 ```text
 Send OTP
-  -> normalize phone
+  -> normalize phone or email
   -> generate OTP
   -> store hash with expiry
-  -> send plaintext OTP through SMS adapter
+  -> send plaintext OTP through SMS or email adapter
 
 Verify OTP
   -> atomically consume valid challenge
@@ -82,7 +82,9 @@ Verify OTP
 
 OTP consumption happens before identity persistence. A rejected, expired, or already consumed OTP must not touch PostgreSQL. The HTTP boundary maps all of these cases to the same unauthorized response so it does not disclose challenge state.
 
-The same external Account cannot belong to multiple Users. Repeated authentication reuses the existing User and Account.
+Phone and email challenges use separate Redis key prefixes. Email addresses are trimmed and
+lowercased before hashing or persistence. The same external Account cannot belong to multiple
+Users. Repeated authentication reuses the existing User and Account.
 
 ## Token Model
 
@@ -98,7 +100,10 @@ Access tokens use signed JWTs with issuer, audience, subject (`userId`), `accoun
 
 Rotation uses a conditional database update so one stored token can rotate only once. Detection of an already-rotated token commits revocation of the server-side Session and every Refresh Token in that Session before returning an error.
 
-`POST /auth/otp/verify` returns a Bearer access token, its expiry, and an opaque refresh token. `POST /auth/refresh` accepts the refresh token, rotates it, and returns a new token pair. Invalid, expired, revoked, and reused refresh tokens all receive the same `401 INVALID_REFRESH_TOKEN` response.
+`POST /auth/otp/verify` and `POST /auth/email/otp/verify` return a Bearer access token, its expiry,
+and an opaque refresh token. `POST /auth/refresh` accepts the refresh token, rotates it, and returns
+a new token pair. Invalid, expired, revoked, and reused refresh tokens all receive the same
+`401 INVALID_REFRESH_TOKEN` response.
 
 Web clients can request `sessionMode: "cookie"` during OTP verification. In this mode, Auth writes the access token to the `__Host-nexus_access` cookie and the refresh token to the path-scoped `__Secure-nexus_refresh` cookie. Both cookies are `HttpOnly`, `Secure`, and `SameSite=Lax`; token plaintext is omitted from the JSON response. A web client refreshes by calling `POST /auth/refresh` with credentials enabled, without reading or sending the refresh token in JavaScript.
 
@@ -110,7 +115,10 @@ The authentication gateway now enforces the configured `TRUSTED_ORIGINS` allowli
 
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 
-Runtime composition accepts an `SmsSender` through the Auth public API. The server must not mount the production send-OTP path with a logger, no-op, or test fake standing in for SMS. A concrete provider adapter and its configuration are selected in a focused integration increment.
+Runtime composition accepts `SmsSender` and `EmailSender` adapters through the Auth public API. The
+server must not mount production send-OTP paths with loggers, no-ops, or test fakes standing in for
+delivery. Concrete provider adapters and their configuration are selected in focused integration
+increments.
 
 ## Public API
 

@@ -10,6 +10,16 @@ export const verifyOtpBodySchema = z.object({
   sessionMode: z.enum(['token', 'cookie']).optional(),
 })
 
+export const sendEmailOtpBodySchema = z.object({
+  email: z.email().max(320),
+})
+
+export const verifyEmailOtpBodySchema = z.object({
+  email: z.email().max(320),
+  otp: z.string().regex(/^\d{6}$/),
+  sessionMode: z.enum(['token', 'cookie']).optional(),
+})
+
 export const refreshBodySchema = z.object({
   refreshToken: z.string().min(32).optional(),
 })

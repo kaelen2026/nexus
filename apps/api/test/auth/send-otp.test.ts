@@ -19,7 +19,7 @@ describe('sendOtp', () => {
     const result = await sendOtp({ phoneNumber: ' +86 138-0013-8000 ' })
 
     expect(saveChallenge).toHaveBeenCalledWith({
-      phoneNumber: '+8613800138000',
+      subject: '+8613800138000',
       otpHash: 'hash:+8613800138000:123456',
       expiresAt: new Date('2026-08-13T00:05:00.000Z'),
     })

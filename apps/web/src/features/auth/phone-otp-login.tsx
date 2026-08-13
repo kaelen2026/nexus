@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/button'
 import { type AuthApi, authApi } from '@/lib/auth-api'
 
 const phoneSchema = z.string().trim().min(8).max(32)
+const emailSchema = z.email().max(320)
 const otpSchema = z.string().regex(/^\d{6}$/)
 const otpSlots = ['one', 'two', 'three', 'four', 'five', 'six'] as const
 
@@ -29,8 +30,10 @@ export function PhoneOtpLogin({
   api = authApi,
   onAuthenticated = () => window.location.assign('/'),
 }: PhoneOtpLoginProps) {
-  const [step, setStep] = useState<'phone' | 'otp'>('phone')
+  const [step, setStep] = useState<'credential' | 'otp'>('credential')
+  const [method, setMethod] = useState<'phone' | 'email'>('phone')
   const [phoneNumber, setPhoneNumber] = useState('')
+  const [email, setEmail] = useState('')
   const [otp, setOtp] = useState('')
   const [error, setError] = useState<string>()
   const [isSubmitting, setIsSubmitting] = useState(false)
@@ -49,12 +52,16 @@ export function PhoneOtpLogin({
     return () => window.clearInterval(timer)
   }, [otpExpiresAt])
 
-  async function requestOtp(validPhoneNumber: string) {
+  async function requestOtp(credential: string) {
     setError(undefined)
     setIsSubmitting(true)
     try {
-      const result = await api.sendOtp({ phoneNumber: validPhoneNumber })
-      setPhoneNumber(validPhoneNumber)
+      const result =
+        method === 'phone'
+          ? await api.sendOtp({ phoneNumber: credential })
+          : await api.sendEmailOtp({ email: credential })
+      if (method === 'phone') setPhoneNumber(credential)
+      else setEmail(credential)
       setOtpExpiresAt(new Date(result.expiresAt).getTime())
       setStep('otp')
     } catch (cause) {
@@ -66,9 +73,11 @@ export function PhoneOtpLogin({
 
   async function sendOtp(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
-    const parsed = phoneSchema.safeParse(phoneNumber)
+    const parsed = (method === 'phone' ? phoneSchema : emailSchema).safeParse(
+      method === 'phone' ? phoneNumber : email,
+    )
     if (!parsed.success) {
-      setError('请输入有效的手机号')
+      setError(method === 'phone' ? '请输入有效的手机号' : '请输入有效的邮箱地址')
       return
     }
 
@@ -86,7 +95,11 @@ export function PhoneOtpLogin({
     setError(undefined)
     setIsSubmitting(true)
     try {
-      await api.verifyOtp({ phoneNumber, otp: parsed.data, sessionMode: 'cookie' })
+      if (method === 'phone') {
+        await api.verifyOtp({ phoneNumber, otp: parsed.data, sessionMode: 'cookie' })
+      } else {
+        await api.verifyEmailOtp({ email, otp: parsed.data, sessionMode: 'cookie' })
+      }
       onAuthenticated()
     } catch (cause) {
       setError(cause instanceof Error ? cause.message : '请求失败，请稍后重试')
@@ -104,30 +117,53 @@ export function PhoneOtpLogin({
 
       <div className="mb-12 h-px w-full bg-border" aria-hidden="true">
         <div
-          className={`h-px bg-primary transition-[width] duration-300 ${step === 'phone' ? 'w-16' : 'w-40'}`}
+          className={`h-px bg-primary transition-[width] duration-300 ${step === 'credential' ? 'w-16' : 'w-40'}`}
         />
       </div>
 
-      {step === 'phone' ? (
+      {step === 'credential' ? (
         <form onSubmit={sendOtp} noValidate>
           <header className="mb-12">
             <h1 className="text-[2rem] font-semibold tracking-[-0.045em]">登录 Nexus</h1>
-            <p className="mt-3 text-base text-muted-foreground">使用手机号继续</p>
+            <p className="mt-3 text-base text-muted-foreground">使用手机号或邮箱继续</p>
           </header>
 
-          <label className="block text-sm font-medium" htmlFor="phone-number">
-            手机号
+          <fieldset
+            className="mb-8 grid grid-cols-2 rounded-[0.7rem] bg-muted p-1"
+            aria-label="登录方式"
+          >
+            {(['phone', 'email'] as const).map((option) => (
+              <button
+                key={option}
+                type="button"
+                onClick={() => {
+                  setMethod(option)
+                  setError(undefined)
+                }}
+                className={`h-10 rounded-[0.55rem] text-sm font-medium transition-colors ${
+                  method === option ? 'bg-background shadow-sm' : 'text-muted-foreground'
+                }`}
+              >
+                {option === 'phone' ? '手机号' : '邮箱'}
+              </button>
+            ))}
+          </fieldset>
+
+          <label className="block text-sm font-medium" htmlFor="credential">
+            {method === 'phone' ? '手机号' : '邮箱'}
           </label>
           <input
-            id="phone-number"
-            autoComplete="tel"
-            inputMode="tel"
-            value={phoneNumber}
+            id="credential"
+            type={method === 'email' ? 'email' : 'tel'}
+            autoComplete={method === 'phone' ? 'tel' : 'email'}
+            inputMode={method === 'phone' ? 'tel' : 'email'}
+            value={method === 'phone' ? phoneNumber : email}
             onChange={(event) => {
-              setPhoneNumber(event.target.value)
+              if (method === 'phone') setPhoneNumber(event.target.value)
+              else setEmail(event.target.value)
               setError(undefined)
             }}
-            placeholder="+86 138 0000 0000"
+            placeholder={method === 'phone' ? '+86 138 0000 0000' : 'you@example.com'}
             aria-invalid={Boolean(error)}
             aria-describedby={error ? 'auth-error' : undefined}
             className="mt-3 h-14 w-full rounded-[0.7rem] border bg-background px-4 text-base outline-none transition-shadow placeholder:text-muted-foreground/65 focus:border-primary focus:ring-3 focus:ring-primary/15 aria-invalid:border-destructive"
@@ -148,7 +184,7 @@ export function PhoneOtpLogin({
           <header className="mb-12">
             <h1 className="text-[2rem] font-semibold tracking-[-0.045em]">输入验证码</h1>
             <p className="mt-3 text-base text-muted-foreground">
-              验证码已发送至 {maskPhoneNumber(phoneNumber)}
+              验证码已发送至 {method === 'phone' ? maskPhoneNumber(phoneNumber) : email}
             </p>
           </header>
 
@@ -194,19 +230,19 @@ export function PhoneOtpLogin({
           <button
             type="button"
             onClick={() => {
-              setStep('phone')
+              setStep('credential')
               setOtp('')
               setError(undefined)
             }}
             className="mx-auto mt-6 flex items-center gap-2 text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary/20"
           >
             <ArrowLeftIcon className="size-4" aria-hidden="true" />
-            更换手机号
+            更换{method === 'phone' ? '手机号' : '邮箱'}
           </button>
           <button
             type="button"
             disabled={isSubmitting || resendSeconds > 0}
-            onClick={() => requestOtp(phoneNumber)}
+            onClick={() => requestOtp(method === 'phone' ? phoneNumber : email)}
             className="mx-auto mt-10 block text-sm font-medium text-primary outline-none hover:underline focus-visible:ring-3 focus-visible:ring-primary/20 disabled:text-muted-foreground disabled:no-underline"
           >
             {resendSeconds > 0 ? `重新发送（${resendSeconds}s）` : '重新发送'}

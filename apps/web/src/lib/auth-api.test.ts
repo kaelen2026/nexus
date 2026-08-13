@@ -58,4 +58,21 @@ describe('authApi', () => {
       }),
     ).rejects.toThrow('验证码无效或已过期')
   })
+
+  it('uses the email OTP endpoints', async () => {
+    const fetchMock = vi.fn().mockResolvedValue(
+      new Response(JSON.stringify({ expiresAt: '2026-08-13T08:05:00.000Z' }), {
+        status: 202,
+        headers: { 'Content-Type': 'application/json' },
+      }),
+    )
+    vi.stubGlobal('fetch', fetchMock)
+
+    await authApi.sendEmailOtp({ email: 'alice@example.com' })
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      'http://localhost:3000/auth/email/otp/send',
+      expect.objectContaining({ body: JSON.stringify({ email: 'alice@example.com' }) }),
+    )
+  })
 })

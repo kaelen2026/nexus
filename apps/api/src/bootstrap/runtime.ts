@@ -2,7 +2,7 @@ import { createDatabase, migrateDatabase } from '@nexus/database'
 import { z } from 'zod'
 
 import { createApp } from '../app.js'
-import { createAuthModule, type SmsSender } from '../modules/auth/index.js'
+import { createAuthModule, type EmailSender, type SmsSender } from '../modules/auth/index.js'
 import { createBillingModule } from '../modules/billing/index.js'
 import { createLlmModule, type LlmProvider } from '../modules/llm/index.js'
 import { createUsersModule } from '../modules/users/index.js'
@@ -24,6 +24,7 @@ const runtimeEnvironmentSchema = z.object({
 interface CreateApiRuntimeOptions {
   env: Record<string, string | undefined>
   generateOtp?: () => string
+  emailSender?: EmailSender
   llmProvider: LlmProvider
   smsSender: SmsSender
 }
@@ -45,6 +46,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   try {
     auth = await createAuthModule({
       database: database.client,
+      ...(options.emailSender ? { emailSender: options.emailSender } : {}),
       ...(options.generateOtp ? { generateOtp: options.generateOtp } : {}),
       otpHashSecret: environment.OTP_HASH_SECRET,
       redisUrl: environment.REDIS_URL,
@@ -60,6 +62,8 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const app = createApp({
     authenticateAccessToken: auth.authenticateAccessToken,
     sendOtp: auth.sendOtp,
+    ...('sendEmailOtp' in auth ? { sendEmailOtp: auth.sendEmailOtp } : {}),
+    ...('verifyEmailOtp' in auth ? { verifyEmailOtp: auth.verifyEmailOtp } : {}),
     verifyPhoneOtp: auth.verifyPhoneOtp,
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
