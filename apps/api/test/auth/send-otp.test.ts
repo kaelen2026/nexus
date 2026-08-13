@@ -9,7 +9,7 @@ describe('sendOtp', () => {
     const now = new Date('2026-08-13T00:00:00.000Z')
     const sendOtp = createSendOtp({
       clock: { now: () => now },
-      challengeStore: { save: saveChallenge },
+      challengeStore: { save: saveChallenge, consume: vi.fn() },
       generateOtp: () => '123456',
       hashOtp: (phoneNumber, otp) => `hash:${phoneNumber}:${otp}`,
       smsSender: { sendOtp: sendSms },
