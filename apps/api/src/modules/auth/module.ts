@@ -52,6 +52,16 @@ export async function createAuthModule(options: AuthModuleOptions) {
   }
 
   return {
+    authenticateAccessToken: async (token: string) => {
+      const identity = await accessTokens.verify(token)
+      return {
+        type: 'user' as const,
+        subject: identity.userId,
+        accountId: identity.accountId,
+        roles: [],
+        scopes: [],
+      }
+    },
     sendOtp: createSendOtp({
       clock: { now: () => new Date() },
       challengeStore,

@@ -6,5 +6,12 @@ export { createPhoneIdentity } from './service/create-phone-identity.js'
 export { createRefreshSession, rotateRefreshToken } from './service/refresh-token.js'
 export { createSendOtp } from './service/send-otp.js'
 export { createVerifyOtp } from './service/verify-otp.js'
-export type { AuthTokenPair, RefreshSession, SendOtp, SmsSender, VerifyPhoneOtp } from './types.js'
+export type {
+  AuthenticateAccessToken,
+  AuthTokenPair,
+  RefreshSession,
+  SendOtp,
+  SmsSender,
+  VerifyPhoneOtp,
+} from './types.js'
 export { authCookieNames } from './types.js'

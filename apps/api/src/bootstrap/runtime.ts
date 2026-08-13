@@ -9,6 +9,12 @@ const runtimeEnvironmentSchema = z.object({
   OTP_HASH_SECRET: z.string().min(32),
   REDIS_URL: z.url(),
   TOKEN_SECRET: z.string().min(32),
+  TRUSTED_ORIGINS: z.string().transform((value) =>
+    value
+      .split(',')
+      .map((origin) => origin.trim())
+      .filter(Boolean),
+  ),
 })
 
 interface CreateApiRuntimeOptions {
@@ -37,9 +43,11 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     throw error
   }
   const app = createApp({
+    authenticateAccessToken: auth.authenticateAccessToken,
     sendOtp: auth.sendOtp,
     verifyPhoneOtp: auth.verifyPhoneOtp,
     refreshSession: auth.refreshSession,
+    trustedOrigins: environment.TRUSTED_ORIGINS,
   })
 
   return {

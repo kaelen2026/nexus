@@ -95,7 +95,9 @@ Rotation uses a conditional database update so one stored token can rotate only 
 
 Web clients can request `sessionMode: "cookie"` during OTP verification. In this mode, Auth writes the access token to the `__Host-nexus_access` cookie and the refresh token to the path-scoped `__Secure-nexus_refresh` cookie. Both cookies are `HttpOnly`, `Secure`, and `SameSite=Lax`; token plaintext is omitted from the JSON response. A web client refreshes by calling `POST /auth/refresh` with credentials enabled, without reading or sending the refresh token in JavaScript.
 
-Cookie mode does not replace Bearer mode. Non-browser clients continue to receive and submit token pairs in JSON. State-changing authenticated routes must add Origin/CSRF enforcement when the authentication gateway begins accepting the access cookie.
+Cookie mode does not replace Bearer mode. Non-browser clients continue to receive and submit token pairs in JSON.
+
+The authentication gateway now enforces the configured `TRUSTED_ORIGINS` allowlist for unsafe requests carrying Auth cookies. Bearer clients are not subject to browser CSRF checks. Valid access tokens produce a runtime user Identity with `subject = userId`; token verification remains an Auth public capability while HTTP credential extraction stays in Gateway.
 
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 

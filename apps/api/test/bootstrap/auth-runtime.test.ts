@@ -32,6 +32,7 @@ describe('Auth runtime composition', () => {
         OTP_HASH_SECRET: 'test-secret-at-least-32-characters',
         REDIS_URL: redisUrl,
         TOKEN_SECRET: 'test-token-secret-at-least-32-characters',
+        TRUSTED_ORIGINS: 'https://app.nexus.test',
       },
       generateOtp: () => '123456',
       smsSender: { sendOtp: sendSms },
@@ -71,7 +72,10 @@ describe('Auth runtime composition', () => {
 
       const refreshResponse = await runtime.app.request('/auth/refresh', {
         method: 'POST',
-        headers: { cookie: refreshCookie ?? '' },
+        headers: {
+          cookie: refreshCookie ?? '',
+          origin: 'https://app.nexus.test',
+        },
       })
       expect(refreshResponse.status).toBe(200)
       const refreshedTokenPair = await refreshResponse.json()
