@@ -13,6 +13,7 @@ import {
   type AuthenticateAccessToken,
   type CompleteOAuth,
   createAuthRouter,
+  type DeleteAccount,
   type LoginWithEmailPassword,
   type Logout,
   type LogoutAll,
@@ -40,6 +41,7 @@ interface AppDependencies {
   loginWithEmailPassword?: LoginWithEmailPassword
   resetEmailPassword?: ResetEmailPassword
   getCurrentUser?: GetCurrentUser
+  deleteAccount?: DeleteAccount
   generate?: Generate
   startOAuth?: StartOAuth
   completeOAuth?: CompleteOAuth
@@ -88,7 +90,13 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     app.route('/auth', createAuthRouter(dependencies))
   }
   if (dependencies.getCurrentUser) {
-    app.route('/users', createUsersRouter({ getCurrentUser: dependencies.getCurrentUser }))
+    app.route(
+      '/users',
+      createUsersRouter({
+        getCurrentUser: dependencies.getCurrentUser,
+        ...(dependencies.deleteAccount ? { deleteAccount: dependencies.deleteAccount } : {}),
+      }),
+    )
   }
   if (dependencies.generate) {
     app.route('/llm', createLlmRouter({ generate: dependencies.generate }))

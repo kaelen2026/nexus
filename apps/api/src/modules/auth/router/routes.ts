@@ -2,6 +2,7 @@ import { type Context, Hono } from 'hono'
 
 import type { GatewayEnvironment } from '../../../gateway/index.js'
 import {
+  AccountDisabledError,
   InvalidCredentialsError,
   InvalidOAuthCallbackError,
   InvalidOtpError,
@@ -106,7 +107,7 @@ export function createAuthRouter(options: {
         await options.resetEmailPassword?.(body.data)
         return context.body(null, 204)
       } catch (error) {
-        if (error instanceof InvalidOtpError) {
+        if (error instanceof InvalidOtpError || error instanceof AccountDisabledError) {
           return context.json(
             { error: { code: 'INVALID_OTP', message: 'Invalid or expired OTP' } },
             401,
@@ -149,7 +150,7 @@ export function createAuthRouter(options: {
         }
         return context.json(tokenPair)
       } catch (error) {
-        if (error instanceof InvalidOtpError) {
+        if (error instanceof InvalidOtpError || error instanceof AccountDisabledError) {
           return context.json(
             { error: { code: 'INVALID_OTP', message: 'Invalid or expired OTP' } },
             401,
@@ -195,7 +196,7 @@ export function createAuthRouter(options: {
       setAuthCookies(context, tokenPair)
       return context.redirect(`${authWebUrl}/`)
     } catch (error) {
-      if (error instanceof InvalidOAuthCallbackError) {
+      if (error instanceof InvalidOAuthCallbackError || error instanceof AccountDisabledError) {
         return context.redirect(`${authWebUrl}/login?error=oauth_failed`)
       }
       throw error
@@ -243,7 +244,7 @@ export function createAuthRouter(options: {
         }
         return context.json(tokenPair)
       } catch (error) {
-        if (error instanceof InvalidOtpError) {
+        if (error instanceof InvalidOtpError || error instanceof AccountDisabledError) {
           return context.json(
             { error: { code: 'INVALID_OTP', message: 'Invalid or expired OTP' } },
             401,

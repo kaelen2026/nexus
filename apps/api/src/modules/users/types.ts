@@ -8,3 +8,5 @@ export interface UserSummary {
 }
 
 export type GetCurrentUser = (userId: string) => Promise<UserSummary>
+
+export type DeleteAccount = (input: { userId: string }) => Promise<void>

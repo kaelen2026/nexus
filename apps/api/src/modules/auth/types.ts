@@ -57,6 +57,8 @@ export type AuthenticateAccessToken = (token: string) => Promise<{
 }>
 
 export type Logout = (input: { sessionId: string }) => Promise<void>
+
+export type DeleteAccount = (input: { userId: string }) => Promise<void>
 export type LogoutAll = (input: { userId: string }) => Promise<void>
 
 export type OAuthProviderId = 'google' | 'apple'

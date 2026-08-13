@@ -15,7 +15,7 @@ export async function findAccount(
   providerSubject: string,
 ) {
   const [account] = await transaction
-    .select({ id: authAccounts.id, userId: authAccounts.userId })
+    .select({ id: authAccounts.id, userId: authAccounts.userId, status: authAccounts.status })
     .from(authAccounts)
     .where(
       and(eq(authAccounts.provider, provider), eq(authAccounts.providerSubject, providerSubject)),
@@ -53,7 +53,7 @@ export async function findOAuthAccount(
   providerSubject: string,
 ) {
   const [account] = await transaction
-    .select({ id: authAccounts.id, userId: authAccounts.userId })
+    .select({ id: authAccounts.id, userId: authAccounts.userId, status: authAccounts.status })
     .from(authAccounts)
     .where(
       and(eq(authAccounts.provider, provider), eq(authAccounts.providerSubject, providerSubject)),

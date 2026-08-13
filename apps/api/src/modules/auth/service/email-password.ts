@@ -2,7 +2,7 @@ import type { DatabaseClient } from '@nexus/database'
 import { eq } from 'drizzle-orm'
 
 import { createUser } from '../../users/index.js'
-import { InvalidCredentialsError } from '../errors.js'
+import { AccountDisabledError, InvalidCredentialsError } from '../errors.js'
 import { findEmailPassword, upsertPasswordCredential } from '../repo/credentials.repo.js'
 import { findAccount, insertAccount, insertSession } from '../repo/identity.repo.js'
 import { authSessions } from '../repo/schema.js'
@@ -46,6 +46,7 @@ export function createResetEmailPassword(dependencies: {
     const passwordHash = await dependencies.hash(input.newPassword)
     const result = await dependencies.database.transaction(async (transaction) => {
       const existing = await findAccount(transaction, 'email', email)
+      if (existing?.status === 'disabled') throw new AccountDisabledError()
       let userId = existing?.userId
       let accountId = existing?.id
       let userCreated = false
