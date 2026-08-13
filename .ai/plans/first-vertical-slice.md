@@ -23,8 +23,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Redis OTP challenge store and TTL | done | PR #5 |
 | Preserve full architecture and execution plan | done | PR #6 |
 | `POST /auth/otp/send` HTTP behavior | done | PR #7 |
-| Secure OTP generation and hashing | in progress | Current feature PR |
-| Production Auth dependency composition | next | Not started |
+| Secure OTP generation and hashing | done | PR #8 |
+| Auth runtime composition factory | in progress | Current feature PR |
+| SMS provider selection and server wiring | next | Not started |
 
 Update this table in every vertical-slice PR that changes scope or status.
 

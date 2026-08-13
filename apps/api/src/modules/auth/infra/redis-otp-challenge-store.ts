@@ -1,9 +1,9 @@
-import type { RedisClientType } from 'redis'
+import type { createClient } from 'redis'
 
 import type { OtpChallengeStore } from '../types.js'
 
 interface RedisOtpChallengeStoreOptions {
-  redis: Pick<RedisClientType, 'set'>
+  redis: Pick<ReturnType<typeof createClient>, 'set'>
   keyPrefix?: string
 }
 
