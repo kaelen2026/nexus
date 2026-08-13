@@ -31,9 +31,6 @@ Only create these files when their use cases are implemented.
 Currently persisted:
 
 - `users`
-
-Reserved for future profile/settings behavior, but not present in the current schema:
-
 - `user_profiles`
 - `user_settings`
 
@@ -62,3 +59,7 @@ Potential exports include `createUser`, `getUserStatus`, and a minimal user summ
 ## Current User
 
 `GET /users/me` requires a Gateway-authenticated user Identity and loads the authoritative User from Users-owned storage. It does not return JWT claims as user data. Active Users receive their stable ID, status, and timestamps. Suspended Users receive `403 USER_SUSPENDED`; deleted or missing Users receive `404 USER_NOT_FOUND`. Auth Account status remains independent from User status.
+
+`GET/PATCH /users/me/profile` reads and updates the optional display name and avatar URL.
+`GET/PATCH /users/me/settings` reads and updates locale and timezone, which default to `zh-CN`
+and `Asia/Shanghai`. User creation initializes both one-to-one records in the same transaction.
