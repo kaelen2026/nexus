@@ -1,6 +1,10 @@
 import { describe, expect, it, vi } from 'vitest'
 
-import { createLlmModule, LlmAccessDeniedError } from '../../src/modules/llm/index.js'
+import {
+  createLlmModule,
+  LlmAccessDeniedError,
+  LlmProviderError,
+} from '../../src/modules/llm/index.js'
 
 describe('LLM generate', () => {
   it('does not reserve usage or invoke the provider without the generate entitlement', async () => {
@@ -86,9 +90,14 @@ describe('LLM generate', () => {
     const provider = { generate: vi.fn().mockRejectedValue(providerError) }
     const llm = createLlmModule({ billing, provider })
 
-    await expect(
-      llm.generate({ userId: 'user-id', model: 'standard', prompt: 'Hello', maxTokens: 100 }),
-    ).rejects.toBe(providerError)
+    const result = llm.generate({
+      userId: 'user-id',
+      model: 'standard',
+      prompt: 'Hello',
+      maxTokens: 100,
+    })
+    await expect(result).rejects.toMatchObject({ name: 'LlmProviderError', cause: providerError })
+    await expect(result).rejects.toBeInstanceOf(LlmProviderError)
     expect(billing.commitUsage).not.toHaveBeenCalled()
     expect(billing.releaseUsage).toHaveBeenCalledWith({ reservationId: 'reservation-id' })
   })

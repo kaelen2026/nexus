@@ -1,3 +1,4 @@
-export { LlmAccessDeniedError } from './errors.js'
+export { LlmAccessDeniedError, LlmProviderError } from './errors.js'
 export { createLlmModule } from './module.js'
-export type { BillingUsageAccess, GenerateInput, GenerateResult } from './types.js'
+export { createLlmRouter } from './router/routes.js'
+export type { BillingUsageAccess, Generate, GenerateInput, GenerateResult } from './types.js'

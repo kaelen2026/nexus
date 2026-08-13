@@ -21,3 +21,5 @@ export interface GenerateResult {
   text: string
   usage: { inputTokens: number; outputTokens: number; totalTokens: number }
 }
+
+export type Generate = (input: GenerateInput) => Promise<GenerateResult>
