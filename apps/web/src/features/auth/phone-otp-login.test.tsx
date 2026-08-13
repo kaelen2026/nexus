@@ -1,5 +1,5 @@
-import { fireEvent, render, screen, waitFor } from '@testing-library/react'
-import { describe, expect, it, vi } from 'vitest'
+import { act, fireEvent, render, screen, waitFor } from '@testing-library/react'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import type { AuthApi } from '@/lib/auth-api'
 import { PhoneOtpLogin } from './phone-otp-login'
@@ -16,6 +16,8 @@ function createAuthApi(overrides: Partial<AuthApi> = {}): AuthApi {
 }
 
 describe('PhoneOtpLogin', () => {
+  afterEach(() => vi.useRealTimers())
+
   it('rejects an invalid phone number without sending a request', async () => {
     const api = createAuthApi()
     render(<PhoneOtpLogin api={api} />)
@@ -95,5 +97,28 @@ describe('PhoneOtpLogin', () => {
       otp: '123456',
       sessionMode: 'cookie',
     })
+  })
+
+  it('prevents resending until the OTP expires, then sends a new OTP', async () => {
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-08-13T08:00:00.000Z'))
+    const sendOtp = vi.fn().mockResolvedValue({ expiresAt: '2026-08-13T08:01:00.000Z' })
+    const api = createAuthApi({ sendOtp })
+    render(<PhoneOtpLogin api={api} />)
+
+    fireEvent.change(screen.getByLabelText('手机号'), {
+      target: { value: '+86 138 0000 0000' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '获取验证码' }))
+    await act(async () => undefined)
+
+    expect(screen.getByRole('button', { name: '重新发送（60s）' })).toBeDisabled()
+    expect(sendOtp).toHaveBeenCalledOnce()
+
+    await act(async () => vi.advanceTimersByTime(60_000))
+    fireEvent.click(screen.getByRole('button', { name: '重新发送' }))
+    await act(async () => undefined)
+
+    expect(sendOtp).toHaveBeenCalledTimes(2)
   })
 })
