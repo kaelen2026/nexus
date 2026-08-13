@@ -9,6 +9,8 @@ export interface RuntimeIdentity {
 
 export interface RequestContext {
   requestId: string
+  traceId: string
+  spanId: string
   identity: RuntimeIdentity | null
   client: {
     ip?: string
