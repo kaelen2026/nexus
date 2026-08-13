@@ -46,6 +46,8 @@ interface RequestContext {
 
 For user identities, `identity.subject` is the stable `userId`.
 
+Authentication accepts either an `Authorization: Bearer` access token or the Auth-owned access cookie. Bearer credentials take precedence and remain suitable for non-browser clients. Cookie credentials are subject to trusted-Origin enforcement on non-safe HTTP methods, including refresh requests; invalid credentials and origins use stable, non-disclosing responses. The same allowlist drives credentialed CORS, and every response carries the generated `x-request-id`. Gateway reads Auth protocol details only through `modules/auth/index.ts`.
+
 ## Identity, Tokens, and Data Ownership
 
 User is the stable business subject; Account is a login identity; Credential is its proof; Session is a login lifecycle; Identity is the runtime principal. One User may own multiple Accounts.
