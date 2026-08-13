@@ -55,6 +55,16 @@ Use direct service calls when a caller needs a result. Use events for facts that
 
 Architecture tests verify: services do not import Hono; routers do not access databases; cross-module deep imports are forbidden; repos do not access foreign schemas; and the module graph has no cycles. Prefer real PostgreSQL and Redis in meaningful integration tests, with focused fakes for SMS, providers, clocks, and IDs.
 
+Development follows test-driven development:
+
+1. Red: write the smallest failing test that describes the next observable behavior.
+2. Green: implement only enough production code to make it pass.
+3. Refactor: improve the design while keeping all tests green.
+
+For bug fixes, reproduce the bug with a failing test before changing production code. Test behavior through a module's public API or HTTP boundary; do not couple tests to private implementation details. Unit tests are appropriate for pure business rules, integration tests for modules with real PostgreSQL/Redis, and critical-flow tests for cross-module behavior. Do not mock Drizzle query chains or Hono internals.
+
+Every implementation task must identify its current Red/Green/Refactor state. A change is not complete until relevant tests, typechecking, formatting/linting, and the build pass.
+
 ## Current Vertical Slice
 
 Prioritize: `Phone OTP -> User -> Account -> Session -> Free Plan -> Access Token -> GET /users/me -> LLM Generate -> Entitlement / Quota -> Provider -> Usage`.
