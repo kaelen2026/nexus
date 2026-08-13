@@ -6,6 +6,7 @@ import { useEffect } from 'react'
 
 import { NexusMark } from '@/components/nexus-brand'
 import { Button } from '@/components/ui/button'
+import { SessionActions } from '@/features/auth/session-actions'
 import { ApiError, apiClient, type NexusApi } from '@/lib/api-client'
 
 const defaultNavigate = (path: string) => window.location.assign(path)
@@ -70,9 +71,12 @@ export function CurrentUserHome({
   return (
     <main className="min-h-screen bg-[#f7f9ff]">
       <header className="border-b bg-background/90 px-6 py-5 backdrop-blur sm:px-10">
-        <div className="mx-auto flex max-w-6xl items-center gap-3">
-          <NexusMark />
-          <span className="text-xl font-semibold tracking-[-0.03em]">Nexus</span>
+        <div className="mx-auto flex max-w-6xl items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <NexusMark />
+            <span className="text-xl font-semibold tracking-[-0.03em]">Nexus</span>
+          </div>
+          <SessionActions api={api} navigate={navigate} />
         </div>
       </header>
       <div className="mx-auto max-w-6xl px-6 py-14 sm:px-10 sm:py-20">

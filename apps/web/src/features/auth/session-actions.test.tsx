@@ -31,7 +31,7 @@ describe('SessionActions', () => {
     const { navigate, queryClient } = renderActions(api)
 
     fireEvent.click(screen.getByRole('button', { name: '账户菜单' }))
-    fireEvent.click(screen.getByRole('button', { name: '退出当前设备' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '退出当前设备' }))
 
     await waitFor(() => expect(api.logout).toHaveBeenCalledOnce())
     expect(queryClient.getQueryData(['current-user'])).toBeUndefined()
@@ -43,7 +43,7 @@ describe('SessionActions', () => {
     const { navigate } = renderActions(api)
 
     fireEvent.click(screen.getByRole('button', { name: '账户菜单' }))
-    fireEvent.click(screen.getByRole('button', { name: '退出所有设备' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '退出所有设备' }))
 
     expect(screen.getByRole('dialog', { name: '退出所有设备？' })).toBeInTheDocument()
     expect(api.logoutAll).not.toHaveBeenCalled()
@@ -59,7 +59,7 @@ describe('SessionActions', () => {
     const { navigate } = renderActions(api)
 
     fireEvent.click(screen.getByRole('button', { name: '账户菜单' }))
-    fireEvent.click(screen.getByRole('button', { name: '退出当前设备' }))
+    fireEvent.click(screen.getByRole('menuitem', { name: '退出当前设备' }))
 
     expect(await screen.findByRole('alert')).toHaveTextContent('暂时无法连接服务，请稍后重试')
     expect(navigate).not.toHaveBeenCalled()
