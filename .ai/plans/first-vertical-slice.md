@@ -21,8 +21,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Drizzle/PostgreSQL connection foundation | done | PR #3 |
 | Send OTP service behavior | done | PR #4 |
 | Redis OTP challenge store and TTL | done | PR #5 |
-| Preserve full architecture and execution plan | in progress | Current documentation PR |
-| `POST /auth/otp/send` HTTP behavior | next | Not started |
+| Preserve full architecture and execution plan | done | PR #6 |
+| `POST /auth/otp/send` HTTP behavior | in progress | Current feature PR |
+| Production Auth dependency composition | next | Not started |
 
 Update this table in every vertical-slice PR that changes scope or status.
 
