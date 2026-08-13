@@ -1,7 +1,7 @@
 import { sql } from 'drizzle-orm'
 import { afterAll, describe, expect, it } from 'vitest'
 
-import { createDatabase } from '../src/index.js'
+import { createDatabase, migrateDatabase } from '../src/index.js'
 
 const database = createDatabase({
   url: process.env.DATABASE_URL ?? 'postgresql://nexus:nexus@localhost:5432/nexus',
@@ -16,5 +16,39 @@ describe('database', () => {
     const result = await database.client.execute<{ value: number }>(sql`select 1 as value`)
 
     expect(result[0]?.value).toBe(1)
+  })
+
+  it('applies identity migrations with module-owned constraints', async () => {
+    await migrateDatabase(database.client)
+
+    const tables = await database.client.execute<{ table_name: string }>(sql`
+      select table_name
+      from information_schema.tables
+      where table_schema = 'public'
+        and table_name in ('users', 'auth_accounts', 'auth_sessions')
+      order by table_name
+    `)
+
+    expect(tables.map((row) => row.table_name)).toEqual(['auth_accounts', 'auth_sessions', 'users'])
+
+    const constraints = await database.client.execute<{ constraint_name: string }>(sql`
+      select constraint_name
+      from information_schema.table_constraints
+      where table_schema = 'public'
+        and constraint_name in (
+          'auth_accounts_provider_subject_unique',
+          'auth_accounts_user_id_users_id_fk',
+          'auth_sessions_account_id_auth_accounts_id_fk',
+          'auth_sessions_user_id_users_id_fk'
+        )
+      order by constraint_name
+    `)
+
+    expect(constraints.map((row) => row.constraint_name)).toEqual([
+      'auth_accounts_provider_subject_unique',
+      'auth_accounts_user_id_users_id_fk',
+      'auth_sessions_account_id_auth_accounts_id_fk',
+      'auth_sessions_user_id_users_id_fk',
+    ])
   })
 })

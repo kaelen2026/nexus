@@ -5,6 +5,8 @@
   "scripts": {
     "build": "turbo run build",
     "check": "biome check .",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "pnpm --filter @nexus/database db:migrate",
     "dev": "turbo run dev",
     "docker:down": "docker compose down",
     "docker:logs": "docker compose logs -f postgres redis",
@@ -24,6 +26,7 @@
     "@biomejs/biome": "^2.2.0",
     "@commitlint/cli": "^19.8.1",
     "@commitlint/config-conventional": "^19.8.1",
+    "drizzle-kit": "^0.31.4",
     "husky": "^9.1.7",
     "lint-staged": "^16.1.5",
     "turbo": "^2.5.6",
