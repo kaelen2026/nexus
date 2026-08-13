@@ -3,7 +3,9 @@ import { z } from 'zod'
 
 import { createApp } from '../app.js'
 import { createAuthModule, type SmsSender } from '../modules/auth/index.js'
+import { createBillingModule } from '../modules/billing/index.js'
 import { createUsersModule } from '../modules/users/index.js'
+import { createInMemoryEventBus } from '../shared/events/index.js'
 
 const runtimeEnvironmentSchema = z.object({
   DATABASE_URL: z.url(),
@@ -28,6 +30,9 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const environment = runtimeEnvironmentSchema.parse(options.env)
   const database = createDatabase({ url: environment.DATABASE_URL })
   await migrateDatabase(database.client)
+  const eventBus = createInMemoryEventBus()
+  const billing = createBillingModule({ database: database.client, eventBus })
+  const users = createUsersModule({ database: database.client, eventBus })
 
   let auth: Awaited<ReturnType<typeof createAuthModule>>
   try {
@@ -38,8 +43,10 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
       redisUrl: environment.REDIS_URL,
       smsSender: options.smsSender,
       tokenSecret: environment.TOKEN_SECRET,
+      publishUserCreated: users.publishUserCreated,
     })
   } catch (error) {
+    billing.close()
     await database.close()
     throw error
   }
@@ -49,7 +56,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     verifyPhoneOtp: auth.verifyPhoneOtp,
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
-    getCurrentUser: createUsersModule(database.client).getCurrentUser,
+    getCurrentUser: users.getCurrentUser,
     logout: auth.logout,
     logoutAll: auth.logoutAll,
   })
@@ -57,6 +64,7 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   return {
     app,
     async close() {
+      billing.close()
       await Promise.allSettled([auth.close(), database.close()])
     },
   }

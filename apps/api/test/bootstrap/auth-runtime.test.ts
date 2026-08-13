@@ -15,7 +15,9 @@ beforeAll(async () => {
 })
 
 beforeEach(async () => {
-  await database.client.execute(sql`truncate auth_sessions, auth_accounts, users cascade`)
+  await database.client.execute(
+    sql`truncate billing_event_receipts, billing_subscriptions, billing_plans, auth_sessions, auth_accounts, users cascade`,
+  )
 })
 
 afterAll(async () => {
@@ -74,6 +76,16 @@ describe('Auth runtime composition', () => {
         .find((cookie) => cookie.startsWith('__Host-nexus_access='))
         ?.split(';', 1)[0]
       expect(accessCookie).toBeDefined()
+
+      const [freeSubscription] = await database.client.execute<{
+        subscriptions: number
+        planKey: string
+      }>(sql`
+        select count(*)::int as subscriptions, min(p.key) as "planKey"
+        from billing_subscriptions s
+        join billing_plans p on p.id = s.plan_id
+      `)
+      expect(freeSubscription).toEqual({ subscriptions: 1, planKey: 'free' })
 
       const currentUserResponse = await runtime.app.request('/users/me', {
         headers: { cookie: accessCookie ?? '' },

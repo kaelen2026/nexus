@@ -1,6 +1,6 @@
 import { createDatabase, migrateDatabase } from '@nexus/database'
 import { sql } from 'drizzle-orm'
-import { afterAll, beforeAll, beforeEach, describe, expect, it } from 'vitest'
+import { afterAll, beforeAll, beforeEach, describe, expect, it, vi } from 'vitest'
 
 import { createPhoneIdentity } from '../../src/modules/auth/index.js'
 
@@ -34,18 +34,21 @@ describe('createPhoneIdentity', () => {
   })
 
   it('reuses the User and Account for repeated authentication', async () => {
+    const publishUserCreated = vi.fn().mockResolvedValue(undefined)
     const input = {
       phoneNumber: '+8613800138000',
       sessionExpiresAt: new Date('2026-09-12T00:00:00.000Z'),
     }
 
-    const first = await createPhoneIdentity(database.client, input)
-    const second = await createPhoneIdentity(database.client, input)
+    const first = await createPhoneIdentity(database.client, input, { publishUserCreated })
+    const second = await createPhoneIdentity(database.client, input, { publishUserCreated })
 
     expect(second.userId).toBe(first.userId)
     expect(second.accountId).toBe(first.accountId)
     expect(second.sessionId).not.toBe(first.sessionId)
     expect(await identityCounts()).toEqual({ users: 1, accounts: 1, sessions: 2 })
+    expect(publishUserCreated).toHaveBeenCalledOnce()
+    expect(publishUserCreated).toHaveBeenCalledWith(first.userId)
   })
 
   it('rolls back User and Account when Session creation fails', async () => {

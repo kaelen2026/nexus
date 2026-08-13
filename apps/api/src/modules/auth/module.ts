@@ -24,6 +24,7 @@ interface AuthModuleOptions {
   redisUrl: string
   smsSender: SmsSender
   tokenSecret: string
+  publishUserCreated?: (userId: string) => Promise<void>
 }
 
 export async function createAuthModule(options: AuthModuleOptions) {
@@ -71,7 +72,12 @@ export async function createAuthModule(options: AuthModuleOptions) {
       const identity = await completePhoneAuthentication(
         {
           consumeOtp: verifyOtp,
-          createIdentity: (identityInput) => createPhoneIdentity(options.database, identityInput),
+          createIdentity: (identityInput) =>
+            createPhoneIdentity(options.database, identityInput, {
+              ...(options.publishUserCreated
+                ? { publishUserCreated: options.publishUserCreated }
+                : {}),
+            }),
         },
         {
           ...input,
