@@ -28,8 +28,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Atomic OTP verification and consumption | done | PR #10 |
 | Identity schemas and migrations | done | PR #11 |
 | Transactional User + Account + Session creation | done | PR #13 |
-| Verify OTP orchestration and HTTP endpoint | in progress | Current feature PR |
-| PostgreSQL runtime wiring and end-to-end verification | next | Not started |
+| Verify OTP orchestration and HTTP endpoint | done | PR #14 |
+| PostgreSQL runtime wiring and end-to-end verification | in progress | Current feature PR |
+| Access/refresh token model | next | Not started |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.
