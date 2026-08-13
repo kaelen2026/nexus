@@ -1,5 +1,5 @@
-import { redirect } from 'next/navigation'
+import { CurrentUserHome } from '@/features/users/current-user-home'
 
 export default function Home() {
-  redirect('/login')
+  return <CurrentUserHome />
 }
