@@ -2,6 +2,7 @@ import { Hono } from 'hono'
 
 import { InvalidOtpError, InvalidRefreshTokenError, RefreshTokenReuseError } from '../errors.js'
 import type { RefreshSession, SendOtp, VerifyPhoneOtp } from '../types.js'
+import { cookieSessionResponse, getRefreshTokenCookie, setAuthCookies } from './cookies.js'
 import { refreshBodySchema, sendOtpBodySchema, verifyOtpBodySchema } from './schema.js'
 
 export function createAuthRouter(options: {
@@ -38,7 +39,14 @@ export function createAuthRouter(options: {
       }
 
       try {
-        return context.json(await options.verifyPhoneOtp?.(body.data))
+        const { sessionMode, ...input } = body.data
+        const tokenPair = await options.verifyPhoneOtp?.(input)
+        if (!tokenPair) throw new Error('Verify OTP is not configured')
+        if (sessionMode === 'cookie') {
+          setAuthCookies(context, tokenPair)
+          return context.json(cookieSessionResponse(tokenPair))
+        }
+        return context.json(tokenPair)
       } catch (error) {
         if (error instanceof InvalidOtpError) {
           return context.json(
@@ -52,8 +60,10 @@ export function createAuthRouter(options: {
 
   if (options.refreshSession)
     router.post('/refresh', async (context) => {
-      const body = refreshBodySchema.safeParse(await context.req.json().catch(() => null))
-      if (!body.success) {
+      const body = refreshBodySchema.safeParse(await context.req.json().catch(() => ({})))
+      const cookieRefreshToken = getRefreshTokenCookie(context)
+      const refreshToken = body.success ? (body.data.refreshToken ?? cookieRefreshToken) : undefined
+      if (!body.success || !refreshToken) {
         return context.json(
           { error: { code: 'INVALID_REQUEST', message: 'Invalid request body' } },
           400,
@@ -61,7 +71,13 @@ export function createAuthRouter(options: {
       }
 
       try {
-        return context.json(await options.refreshSession?.(body.data))
+        const tokenPair = await options.refreshSession?.({ refreshToken })
+        if (!tokenPair) throw new Error('Refresh Session is not configured')
+        if (cookieRefreshToken) {
+          setAuthCookies(context, tokenPair)
+          return context.json(cookieSessionResponse(tokenPair))
+        }
+        return context.json(tokenPair)
       } catch (error) {
         if (error instanceof InvalidRefreshTokenError || error instanceof RefreshTokenReuseError) {
           return context.json(

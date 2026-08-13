@@ -93,6 +93,10 @@ Rotation uses a conditional database update so one stored token can rotate only 
 
 `POST /auth/otp/verify` returns a Bearer access token, its expiry, and an opaque refresh token. `POST /auth/refresh` accepts the refresh token, rotates it, and returns a new token pair. Invalid, expired, revoked, and reused refresh tokens all receive the same `401 INVALID_REFRESH_TOKEN` response.
 
+Web clients can request `sessionMode: "cookie"` during OTP verification. In this mode, Auth writes the access token to the `__Host-nexus_access` cookie and the refresh token to the path-scoped `__Secure-nexus_refresh` cookie. Both cookies are `HttpOnly`, `Secure`, and `SameSite=Lax`; token plaintext is omitted from the JSON response. A web client refreshes by calling `POST /auth/refresh` with credentials enabled, without reading or sending the refresh token in JavaScript.
+
+Cookie mode does not replace Bearer mode. Non-browser clients continue to receive and submit token pairs in JSON. State-changing authenticated routes must add Origin/CSRF enforcement when the authentication gateway begins accepting the access cookie.
+
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 
 Runtime composition accepts an `SmsSender` through the Auth public API. The server must not mount the production send-OTP path with a logger, no-op, or test fake standing in for SMS. A concrete provider adapter and its configuration are selected in a focused integration increment.

@@ -29,3 +29,8 @@ export interface AuthTokenPair {
 }
 
 export type RefreshSession = (input: { refreshToken: string }) => Promise<AuthTokenPair>
+
+export const authCookieNames = {
+  access: '__Host-nexus_access',
+  refresh: '__Secure-nexus_refresh',
+} as const

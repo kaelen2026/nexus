@@ -7,3 +7,4 @@ export { createRefreshSession, rotateRefreshToken } from './service/refresh-toke
 export { createSendOtp } from './service/send-otp.js'
 export { createVerifyOtp } from './service/verify-otp.js'
 export type { AuthTokenPair, RefreshSession, SendOtp, SmsSender, VerifyPhoneOtp } from './types.js'
+export { authCookieNames } from './types.js'
