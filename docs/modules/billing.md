@@ -67,6 +67,8 @@ The initial implementation uses a synchronous in-memory EventBus. The consumer t
 
 The initial free policy enables `llm.generate` and grants a 10,000-token quota. Access policy resolution follows only an active Subscription and returns no entitlement or quota for ended subscriptions.
 
+Usage reservation serializes decisions per User and quota key with a PostgreSQL advisory transaction lock. Active reservations reduce the available quota, successful operations create one immutable usage record, and commit/release retries are idempotent. Actual usage cannot exceed the units reserved by the caller.
+
 ## Public API
 
 LLM may import entitlement, quota, reserve, commit, and release capabilities only through `billing/index.ts`. It must never access Billing repos or tables.

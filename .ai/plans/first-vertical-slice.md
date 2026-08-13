@@ -38,8 +38,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | Authenticated `GET /users/me` | done | PR #21 |
 | Logout and logout-all session revocation | done | PR #22 |
 | UserCreated event and idempotent free-plan assignment | done | PR #23 |
-| Billing entitlement and quota primitives | in progress | Current feature PR |
-| LLM generate access checks and fake provider | next | Not started |
+| Billing entitlement and quota primitives | done | PR #24 |
+| Billing usage reservation and LLM generate service | in progress | Current feature PR |
+| LLM generate HTTP endpoint | next | Not started |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.
