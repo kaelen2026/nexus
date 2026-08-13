@@ -34,3 +34,19 @@ export const authSessions = pgTable(
   },
   (table) => [index('auth_sessions_user_id_idx').on(table.userId)],
 )
+
+export const authRefreshTokens = pgTable(
+  'auth_refresh_tokens',
+  {
+    id: uuid().defaultRandom().primaryKey(),
+    sessionId: uuid('session_id')
+      .notNull()
+      .references(() => authSessions.id),
+    tokenHash: text('token_hash').notNull().unique(),
+    createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
+    expiresAt: timestamp('expires_at', { withTimezone: true }).notNull(),
+    rotatedAt: timestamp('rotated_at', { withTimezone: true }),
+    revokedAt: timestamp('revoked_at', { withTimezone: true }),
+  },
+  (table) => [index('auth_refresh_tokens_session_id_idx').on(table.sessionId)],
+)
