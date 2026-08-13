@@ -1,4 +1,3 @@
-import { createClient } from 'redis'
 import { z } from 'zod'
 
 import { createApp } from '../app.js'
@@ -17,21 +16,16 @@ interface CreateApiRuntimeOptions {
 
 export async function createApiRuntime(options: CreateApiRuntimeOptions) {
   const environment = runtimeEnvironmentSchema.parse(options.env)
-  const redis = createClient({ url: environment.REDIS_URL })
-  await redis.connect()
-
-  const auth = createAuthModule({
+  const auth = await createAuthModule({
     ...(options.generateOtp ? { generateOtp: options.generateOtp } : {}),
     otpHashSecret: environment.OTP_HASH_SECRET,
-    redis,
+    redisUrl: environment.REDIS_URL,
     smsSender: options.smsSender,
   })
   const app = createApp({ sendOtp: auth.sendOtp })
 
   return {
     app,
-    async close() {
-      if (redis.isOpen) await redis.quit()
-    },
+    close: auth.close,
   }
 }

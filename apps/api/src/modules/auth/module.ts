@@ -1,6 +1,5 @@
-import type { createClient } from 'redis'
-
 import { createOtpHasher, generateOtp as generateSecureOtp } from './infra/otp.js'
+import { createAuthRedis } from './infra/redis.js'
 import { createRedisOtpChallengeStore } from './infra/redis-otp-challenge-store.js'
 import { createSendOtp } from './service/send-otp.js'
 import { createVerifyOtp } from './service/verify-otp.js'
@@ -10,12 +9,13 @@ interface AuthModuleOptions {
   generateOtp?: () => string
   otpHashSecret: string
   otpTtlSeconds?: number
-  redis: ReturnType<typeof createClient>
+  redisUrl: string
   smsSender: SmsSender
 }
 
-export function createAuthModule(options: AuthModuleOptions) {
-  const challengeStore = createRedisOtpChallengeStore({ redis: options.redis })
+export async function createAuthModule(options: AuthModuleOptions) {
+  const redis = await createAuthRedis(options.redisUrl)
+  const challengeStore = createRedisOtpChallengeStore({ redis: redis.client })
   const hashOtp = createOtpHasher(options.otpHashSecret)
 
   return {
@@ -28,5 +28,6 @@ export function createAuthModule(options: AuthModuleOptions) {
       ttlSeconds: options.otpTtlSeconds ?? 300,
     }),
     verifyOtp: createVerifyOtp({ challengeStore, hashOtp }),
+    close: redis.close,
   }
 }
