@@ -1,4 +1,5 @@
 export { InvalidOtpError, InvalidRefreshTokenError, RefreshTokenReuseError } from './errors.js'
+export { createLocalDevelopmentSms } from './infra/local-development-sms.js'
 export { createAuthModule } from './module.js'
 export { createAuthRouter } from './router/routes.js'
 export { completePhoneAuthentication } from './service/complete-phone-authentication.js'
