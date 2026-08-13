@@ -3,11 +3,16 @@ import type { DatabaseClient } from '@nexus/database'
 import { createOtpHasher, generateOtp as generateSecureOtp } from './infra/otp.js'
 import { createAuthRedis } from './infra/redis.js'
 import { createRedisOtpChallengeStore } from './infra/redis-otp-challenge-store.js'
+import { createAccessTokenService } from './infra/token.js'
 import { completePhoneAuthentication } from './service/complete-phone-authentication.js'
 import { createPhoneIdentity } from './service/create-phone-identity.js'
+import { createRefreshSession, rotateRefreshToken } from './service/refresh-token.js'
 import { createSendOtp } from './service/send-otp.js'
 import { createVerifyOtp } from './service/verify-otp.js'
-import type { SmsSender } from './types.js'
+import type { AuthTokenPair, SmsSender } from './types.js'
+
+const accessTokenTtlSeconds = 15 * 60
+const sessionTtlMilliseconds = 30 * 24 * 60 * 60 * 1_000
 
 interface AuthModuleOptions {
   database: DatabaseClient
@@ -16,6 +21,7 @@ interface AuthModuleOptions {
   otpTtlSeconds?: number
   redisUrl: string
   smsSender: SmsSender
+  tokenSecret: string
 }
 
 export async function createAuthModule(options: AuthModuleOptions) {
@@ -23,6 +29,27 @@ export async function createAuthModule(options: AuthModuleOptions) {
   const challengeStore = createRedisOtpChallengeStore({ redis: redis.client })
   const hashOtp = createOtpHasher(options.otpHashSecret)
   const verifyOtp = createVerifyOtp({ challengeStore, hashOtp })
+  const accessTokens = createAccessTokenService({
+    issuer: 'nexus',
+    audience: 'nexus-api',
+    secret: options.tokenSecret,
+    ttlSeconds: accessTokenTtlSeconds,
+  })
+
+  async function issueTokenPair(
+    identity: { userId: string; accountId: string; sessionId: string },
+    refreshToken: string,
+  ): Promise<AuthTokenPair> {
+    const now = new Date()
+    return {
+      tokenType: 'Bearer',
+      accessToken: await accessTokens.issue(identity, now),
+      accessTokenExpiresAt: new Date(
+        (Math.floor(now.getTime() / 1_000) + accessTokenTtlSeconds) * 1_000,
+      ),
+      refreshToken,
+    }
+  }
 
   return {
     sendOtp: createSendOtp({
@@ -33,17 +60,33 @@ export async function createAuthModule(options: AuthModuleOptions) {
       smsSender: options.smsSender,
       ttlSeconds: options.otpTtlSeconds ?? 300,
     }),
-    verifyPhoneOtp: (input: { phoneNumber: string; otp: string }) =>
-      completePhoneAuthentication(
+    verifyPhoneOtp: async (input: { phoneNumber: string; otp: string }) => {
+      const sessionExpiresAt = new Date(Date.now() + sessionTtlMilliseconds)
+      const identity = await completePhoneAuthentication(
         {
           consumeOtp: verifyOtp,
           createIdentity: (identityInput) => createPhoneIdentity(options.database, identityInput),
         },
         {
           ...input,
-          sessionExpiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1_000),
+          sessionExpiresAt,
         },
-      ),
+      )
+      const { refreshToken } = await createRefreshSession(options.database, {
+        sessionId: identity.sessionId,
+        secret: options.tokenSecret,
+        expiresAt: sessionExpiresAt,
+      })
+      return issueTokenPair(identity, refreshToken)
+    },
+    refreshSession: async (input: { refreshToken: string }) => {
+      const { identity, refreshToken } = await rotateRefreshToken(options.database, {
+        refreshToken: input.refreshToken,
+        secret: options.tokenSecret,
+        expiresAt: new Date(Date.now() + sessionTtlMilliseconds),
+      })
+      return issueTokenPair(identity, refreshToken)
+    },
     close: redis.close,
   }
 }
