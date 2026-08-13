@@ -18,7 +18,8 @@ The web app listens on `http://localhost:3001` and expects the API at
 `http://localhost:3001` in `TRUSTED_ORIGINS`.
 
 Authentication requests always use `credentials: "include"`. Browser code never reads or stores
-access and refresh token plaintext.
+access and refresh token plaintext. Protected API requests that receive `401` share a single
+cookie refresh request and retry once; an unrecoverable session returns the user to `/login`.
 
 ## Quality checks
 
