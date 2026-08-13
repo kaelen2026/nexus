@@ -57,6 +57,8 @@ Resolve Logical Model
 
 Provider failure finalizes the request and releases the reservation.
 
+The initial non-streaming service resolves the `standard` logical model, checks the `llm.generate` entitlement, and reserves the requested total-token budget under `llm.tokens`. Provider success commits normalized input plus output tokens; provider failure releases the reservation before propagating the error. HTTP mapping and durable LLM request records remain in the next increment.
+
 ## Streaming
 
 Normalized events are `start`, `text_delta`, `tool_call_delta`, `usage`, `done`, and `error`.

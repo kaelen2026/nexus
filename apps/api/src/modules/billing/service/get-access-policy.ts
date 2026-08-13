@@ -1,6 +1,7 @@
 import type { DatabaseClient } from '@nexus/database'
 
 import { findActiveEntitlement, findActiveQuotaLimit } from '../repo/access-policy.repo.js'
+import { getUsageTotals } from '../repo/usage.repo.js'
 
 export async function getEntitlement(
   database: DatabaseClient,
@@ -15,5 +16,10 @@ export async function getQuota(
 ): Promise<{ limit: number; used: number; remaining: number } | null> {
   const limit = await findActiveQuotaLimit(database, input)
   if (limit === null) return null
-  return { limit, used: 0, remaining: limit }
+  const totals = await getUsageTotals(database, input)
+  return {
+    limit,
+    used: totals.used,
+    remaining: Math.max(0, limit - totals.used - totals.reserved),
+  }
 }
