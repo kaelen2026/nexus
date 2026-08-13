@@ -99,6 +99,8 @@ Cookie mode does not replace Bearer mode. Non-browser clients continue to receiv
 
 The authentication gateway now enforces the configured `TRUSTED_ORIGINS` allowlist for unsafe requests carrying Auth cookies. Bearer clients are not subject to browser CSRF checks. Valid access tokens produce a runtime user Identity with `subject = userId`; token verification remains an Auth public capability while HTTP credential extraction stays in Gateway.
 
+`POST /auth/logout` revokes the current server-side Session and all Refresh Tokens attached to it. `POST /auth/logout-all` revokes every Session and Refresh Token owned by the current User. Both endpoints clear the web access and refresh cookies and are idempotent. Access-token authentication verifies that the referenced Session is active, unexpired, and belongs to the token's User and Account, so revocation takes effect immediately even when the JWT has not expired.
+
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 
 Runtime composition accepts an `SmsSender` through the Auth public API. The server must not mount the production send-OTP path with a logger, no-op, or test fake standing in for SMS. A concrete provider adapter and its configuration are selected in a focused integration increment.

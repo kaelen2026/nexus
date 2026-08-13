@@ -7,6 +7,7 @@ const identity = {
   type: 'user' as const,
   subject: 'user-id',
   accountId: 'account-id',
+  sessionId: 'session-id',
   roles: [],
   scopes: [],
 }

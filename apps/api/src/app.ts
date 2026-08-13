@@ -9,6 +9,8 @@ import {
 import {
   type AuthenticateAccessToken,
   createAuthRouter,
+  type Logout,
+  type LogoutAll,
   type RefreshSession,
   type SendOtp,
   type VerifyPhoneOtp,
@@ -21,6 +23,8 @@ interface AppDependencies {
   sendOtp?: SendOtp
   verifyPhoneOtp?: VerifyPhoneOtp
   refreshSession?: RefreshSession
+  logout?: Logout
+  logoutAll?: LogoutAll
   getCurrentUser?: GetCurrentUser
 }
 
@@ -38,7 +42,13 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
     )
   }
   app.get('/health', (context) => context.json({ status: 'ok' }))
-  if (dependencies.sendOtp || dependencies.verifyPhoneOtp || dependencies.refreshSession) {
+  if (
+    dependencies.sendOtp ||
+    dependencies.verifyPhoneOtp ||
+    dependencies.refreshSession ||
+    dependencies.logout ||
+    dependencies.logoutAll
+  ) {
     app.route('/auth', createAuthRouter(dependencies))
   }
   if (dependencies.getCurrentUser) {

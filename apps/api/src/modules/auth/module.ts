@@ -4,8 +4,10 @@ import { createOtpHasher, generateOtp as generateSecureOtp } from './infra/otp.j
 import { createAuthRedis } from './infra/redis.js'
 import { createRedisOtpChallengeStore } from './infra/redis-otp-challenge-store.js'
 import { createAccessTokenService } from './infra/token.js'
+import { authenticate } from './service/authenticate.js'
 import { completePhoneAuthentication } from './service/complete-phone-authentication.js'
 import { createPhoneIdentity } from './service/create-phone-identity.js'
+import { revokeAllSessions, revokeSession } from './service/logout.js'
 import { createRefreshSession, rotateRefreshToken } from './service/refresh-token.js'
 import { createSendOtp } from './service/send-otp.js'
 import { createVerifyOtp } from './service/verify-otp.js'
@@ -52,16 +54,10 @@ export async function createAuthModule(options: AuthModuleOptions) {
   }
 
   return {
-    authenticateAccessToken: async (token: string) => {
-      const identity = await accessTokens.verify(token)
-      return {
-        type: 'user' as const,
-        subject: identity.userId,
-        accountId: identity.accountId,
-        roles: [],
-        scopes: [],
-      }
-    },
+    authenticateAccessToken: (token: string) =>
+      authenticate(options.database, accessTokens.verify, token),
+    logout: (input: { sessionId: string }) => revokeSession(options.database, input.sessionId),
+    logoutAll: (input: { userId: string }) => revokeAllSessions(options.database, input.userId),
     sendOtp: createSendOtp({
       clock: { now: () => new Date() },
       challengeStore,

@@ -50,6 +50,8 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,
     getCurrentUser: createUsersModule(database.client).getCurrentUser,
+    logout: auth.logout,
+    logoutAll: auth.logoutAll,
   })
 
   return {

@@ -101,6 +101,21 @@ describe('Auth runtime composition', () => {
       })
       expect(refreshResponse.headers.getSetCookie()).toHaveLength(2)
 
+      const logoutResponse = await runtime.app.request('/auth/logout', {
+        method: 'POST',
+        headers: {
+          cookie: accessCookie ?? '',
+          origin: 'https://app.nexus.test',
+        },
+      })
+      expect(logoutResponse.status).toBe(204)
+      expect(logoutResponse.headers.getSetCookie()).toHaveLength(2)
+
+      const revokedSessionResponse = await runtime.app.request('/users/me', {
+        headers: { cookie: accessCookie ?? '' },
+      })
+      expect(revokedSessionResponse.status).toBe(401)
+
       const replayResponse = await runtime.app.request('/auth/otp/verify', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
