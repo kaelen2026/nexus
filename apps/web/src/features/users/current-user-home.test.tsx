@@ -41,7 +41,7 @@ describe('CurrentUserHome', () => {
     expect(await screen.findByRole('heading', { name: '和 Nexus 一起创作' })).toBeInTheDocument()
     expect(screen.getByText('user-id')).toBeInTheDocument()
     expect(screen.getByText('正常')).toBeInTheDocument()
-    expect(screen.getByText('2026-08-13 00:00 UTC')).toBeInTheDocument()
+    expect(screen.getByText('账户状态')).toBeInTheDocument()
   })
 
   it('redirects to login after refresh cannot restore the session', async () => {

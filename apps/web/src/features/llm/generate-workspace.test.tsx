@@ -63,4 +63,17 @@ describe('GenerateWorkspace', () => {
     expect(await screen.findByRole('alert')).toHaveTextContent('当前账户暂无可用的生成额度')
     expect(screen.queryByText('生成结果')).not.toBeInTheDocument()
   })
+
+  it('returns to login when the session cannot be restored', async () => {
+    const navigate = vi.fn()
+    const generate = vi.fn().mockRejectedValue(new ApiError('UNAUTHENTICATED', '登录状态已失效'))
+    render(<GenerateWorkspace api={createApi(generate)} navigate={navigate} />)
+
+    fireEvent.change(screen.getByLabelText('你想让 Nexus 做什么？'), {
+      target: { value: '生成一个提纲' },
+    })
+    fireEvent.click(screen.getByRole('button', { name: '生成内容' }))
+
+    await waitFor(() => expect(navigate).toHaveBeenCalledWith('/login'))
+  })
 })
