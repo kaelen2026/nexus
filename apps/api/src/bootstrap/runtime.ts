@@ -64,6 +64,8 @@ export async function createApiRuntime(options: CreateApiRuntimeOptions) {
     sendOtp: auth.sendOtp,
     ...('sendEmailOtp' in auth ? { sendEmailOtp: auth.sendEmailOtp } : {}),
     ...('verifyEmailOtp' in auth ? { verifyEmailOtp: auth.verifyEmailOtp } : {}),
+    loginWithEmailPassword: auth.loginWithEmailPassword,
+    ...('resetEmailPassword' in auth ? { resetEmailPassword: auth.resetEmailPassword } : {}),
     verifyPhoneOtp: auth.verifyPhoneOtp,
     refreshSession: auth.refreshSession,
     trustedOrigins: environment.TRUSTED_ORIGINS,

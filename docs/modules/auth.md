@@ -3,8 +3,9 @@
 ## Responsibility
 
 Auth owns authentication identities, sessions, refresh tokens, and the production of a runtime
-Identity. Phone and email Accounts are implemented; passwords, API keys, and account linking are
-future capabilities. Auth does not own the stable business User or user profile.
+Identity. Phone and email Accounts, email password credentials, and password recovery are
+implemented; API keys and account linking are future capabilities. Auth does not own the stable
+business User or user profile.
 
 ```text
 User 1:N Account
@@ -50,12 +51,11 @@ auth/
 Currently persisted:
 
 - `auth_accounts`
+- `auth_credentials`
 - `auth_sessions`
 - `auth_refresh_tokens`
 
 Reserved for future capabilities, but not present in the current schema:
-
-- `auth_credentials`
 - `auth_api_keys`
 
 OTP challenges may live in Redis because they are short-lived authentication state. Auth owns their key format and lifecycle.
@@ -85,6 +85,17 @@ OTP consumption happens before identity persistence. A rejected, expired, or alr
 Phone and email challenges use separate Redis key prefixes. Email addresses are trimmed and
 lowercased before hashing or persistence. The same external Account cannot belong to multiple
 Users. Repeated authentication reuses the existing User and Account.
+
+## Email Password Flow
+
+Email password setup and recovery require a valid email OTP. The reset operation creates an email
+Account on first verified use or replaces the credential for an existing Account. Replacing a
+password revokes every existing Session for that User.
+
+Passwords must contain 12–128 characters. Auth hashes them with Node's scrypt using a random
+per-credential salt; plaintext passwords are never persisted or logged. Password login returns the
+same `INVALID_CREDENTIALS` response for an unknown email and an incorrect password, and performs a
+dummy hash verification for unknown accounts to reduce timing disclosure.
 
 ## Token Model
 

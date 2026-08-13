@@ -29,11 +29,18 @@ export interface AuthApi {
     otp: string
     sessionMode: 'cookie'
   }): Promise<z.infer<typeof cookieSessionResponseSchema>>
+  loginWithEmailPassword(input: {
+    email: string
+    password: string
+    sessionMode: 'cookie'
+  }): Promise<z.infer<typeof cookieSessionResponseSchema>>
+  resetEmailPassword(input: { email: string; otp: string; newPassword: string }): Promise<void>
 }
 
 const errorMessages: Record<string, string> = {
   INVALID_OTP: '验证码无效或已过期',
   INVALID_REQUEST: '请求内容无效，请检查后重试',
+  INVALID_CREDENTIALS: '邮箱或密码错误',
 }
 
 async function request<T>(path: string, body: unknown, schema: z.ZodType<T>): Promise<T> {
@@ -51,7 +58,8 @@ async function request<T>(path: string, body: unknown, schema: z.ZodType<T>): Pr
     throw new Error('暂时无法连接服务，请稍后重试')
   }
 
-  const payload: unknown = await response.json().catch(() => null)
+  const payload: unknown =
+    response.status === 204 ? undefined : await response.json().catch(() => null)
   if (!response.ok) {
     const apiError = apiErrorSchema.safeParse(payload)
     const code = apiError.success ? apiError.data.error.code : undefined
@@ -68,4 +76,7 @@ export const authApi: AuthApi = {
   verifyOtp: (input) => request('/auth/otp/verify', input, cookieSessionResponseSchema),
   sendEmailOtp: (input) => request('/auth/email/otp/send', input, sendOtpResponseSchema),
   verifyEmailOtp: (input) => request('/auth/email/otp/verify', input, cookieSessionResponseSchema),
+  loginWithEmailPassword: (input) =>
+    request('/auth/email/password/login', input, cookieSessionResponseSchema),
+  resetEmailPassword: (input) => request('/auth/email/password/reset', input, z.void()),
 }

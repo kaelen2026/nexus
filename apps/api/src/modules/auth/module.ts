@@ -1,6 +1,7 @@
 import type { DatabaseClient } from '@nexus/database'
 
 import { createOtpHasher, generateOtp as generateSecureOtp } from './infra/otp.js'
+import { createPasswordService } from './infra/password.js'
 import { createAuthRedis } from './infra/redis.js'
 import { createRedisOtpChallengeStore } from './infra/redis-otp-challenge-store.js'
 import { createAccessTokenService } from './infra/token.js'
@@ -10,6 +11,7 @@ import { completePhoneAuthentication } from './service/complete-phone-authentica
 import { createEmailIdentity } from './service/create-email-identity.js'
 import { createPhoneIdentity } from './service/create-phone-identity.js'
 import { createSendEmailOtp, createVerifyEmailOtp } from './service/email-otp.js'
+import { createEmailPasswordLogin, createResetEmailPassword } from './service/email-password.js'
 import { revokeAllSessions, revokeSession } from './service/logout.js'
 import { createRefreshSession, rotateRefreshToken } from './service/refresh-token.js'
 import { createSendOtp } from './service/send-otp.js'
@@ -53,6 +55,7 @@ export async function createAuthModule(options: AuthModuleOptions) {
     secret: options.tokenSecret,
     ttlSeconds: accessTokenTtlSeconds,
   })
+  const passwords = createPasswordService()
 
   async function issueTokenPair(
     identity: { userId: string; accountId: string; sessionId: string },
@@ -103,8 +106,45 @@ export async function createAuthModule(options: AuthModuleOptions) {
       }
     : {}
 
+  async function createTokenPairForIdentity(identity: {
+    userId: string
+    accountId: string
+    sessionId: string
+  }) {
+    const { refreshToken } = await createRefreshSession(options.database, {
+      sessionId: identity.sessionId,
+      secret: options.tokenSecret,
+      expiresAt: new Date(Date.now() + sessionTtlMilliseconds),
+    })
+    return issueTokenPair(identity, refreshToken)
+  }
+
+  const loginWithPassword = createEmailPasswordLogin({
+    database: options.database,
+    verify: passwords.verify,
+  })
+
   return {
     ...emailOtp,
+    loginWithEmailPassword: async (input: { email: string; password: string }) => {
+      const identity = await loginWithPassword({
+        ...input,
+        sessionExpiresAt: new Date(Date.now() + sessionTtlMilliseconds),
+      })
+      return createTokenPairForIdentity(identity)
+    },
+    ...(options.emailSender
+      ? {
+          resetEmailPassword: createResetEmailPassword({
+            database: options.database,
+            consumeOtp: verifyEmailOtpChallenge,
+            hash: passwords.hash,
+            ...(options.publishUserCreated
+              ? { publishUserCreated: options.publishUserCreated }
+              : {}),
+          }),
+        }
+      : {}),
     authenticateAccessToken: (token: string) =>
       authenticate(options.database, accessTokens.verify, token),
     logout: (input: { sessionId: string }) => revokeSession(options.database, input.sessionId),
