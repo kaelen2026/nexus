@@ -29,6 +29,20 @@ Apply committed Drizzle migrations after the services are healthy:
 pnpm db:migrate
 ```
 
+Start the API and web app with `pnpm dev`. The API development server binds only to
+`127.0.0.1:3000` and refuses to use its local adapters unless `NODE_ENV=development`.
+
+The local SMS adapter keeps OTPs in memory instead of sending a real text message. After requesting
+an OTP, read the latest message for that phone number with:
+
+```bash
+curl 'http://127.0.0.1:3000/dev/sms/latest?phoneNumber=%2B8613800138000'
+```
+
+The response is marked `Cache-Control: no-store`. Restarting the API clears the inbox. The local LLM
+adapter returns a deterministic response prefixed with `Local response:` so the complete login and
+generation flow works without external credentials.
+
 After changing a module-owned Drizzle schema, generate and review a migration with `pnpm db:generate`. Schema source files stay in their owning modules; generated migration artifacts live in `packages/database/migrations`.
 
 Data persists in the named volumes `nexus_postgres-data` and `nexus_redis-data`. `pnpm docker:down` stops and removes containers but preserves data. Removing volumes is intentionally not exposed as a package script because it deletes local database state.
