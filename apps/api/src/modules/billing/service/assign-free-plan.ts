@@ -1,6 +1,12 @@
 import type { DatabaseClient } from '@nexus/database'
 
-import { billingEventReceipts, billingPlans, billingSubscriptions } from '../repo/schema.js'
+import {
+  billingEventReceipts,
+  billingPlanEntitlements,
+  billingPlanQuotas,
+  billingPlans,
+  billingSubscriptions,
+} from '../repo/schema.js'
 
 export async function assignFreePlan(
   database: DatabaseClient,
@@ -20,6 +26,21 @@ export async function assignFreePlan(
       .onConflictDoUpdate({ target: billingPlans.key, set: { key: 'free' } })
       .returning({ id: billingPlans.id })
     if (!plan) throw new Error('Failed to resolve free Billing Plan')
+
+    await transaction
+      .insert(billingPlanEntitlements)
+      .values({ planId: plan.id, key: 'llm.generate', enabled: true })
+      .onConflictDoUpdate({
+        target: [billingPlanEntitlements.planId, billingPlanEntitlements.key],
+        set: { enabled: true },
+      })
+    await transaction
+      .insert(billingPlanQuotas)
+      .values({ planId: plan.id, key: 'llm.tokens', limit: 10_000 })
+      .onConflictDoUpdate({
+        target: [billingPlanQuotas.planId, billingPlanQuotas.key],
+        set: { limit: 10_000 },
+      })
 
     await transaction
       .insert(billingSubscriptions)

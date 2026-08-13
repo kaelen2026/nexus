@@ -27,7 +27,8 @@ describe('database', () => {
       where table_schema = 'public'
         and table_name in (
           'users', 'auth_accounts', 'auth_sessions',
-          'billing_plans', 'billing_subscriptions', 'billing_event_receipts'
+          'billing_plans', 'billing_plan_entitlements', 'billing_plan_quotas',
+          'billing_subscriptions', 'billing_event_receipts'
         )
       order by table_name
     `)
@@ -36,6 +37,8 @@ describe('database', () => {
       'auth_accounts',
       'auth_sessions',
       'billing_event_receipts',
+      'billing_plan_entitlements',
+      'billing_plan_quotas',
       'billing_plans',
       'billing_subscriptions',
       'users',
