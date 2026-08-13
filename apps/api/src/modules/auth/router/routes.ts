@@ -1,16 +1,24 @@
 import { Hono } from 'hono'
 
+import type { GatewayEnvironment } from '../../../gateway/index.js'
 import { InvalidOtpError, InvalidRefreshTokenError, RefreshTokenReuseError } from '../errors.js'
-import type { RefreshSession, SendOtp, VerifyPhoneOtp } from '../types.js'
-import { cookieSessionResponse, getRefreshTokenCookie, setAuthCookies } from './cookies.js'
+import type { Logout, LogoutAll, RefreshSession, SendOtp, VerifyPhoneOtp } from '../types.js'
+import {
+  clearAuthCookies,
+  cookieSessionResponse,
+  getRefreshTokenCookie,
+  setAuthCookies,
+} from './cookies.js'
 import { refreshBodySchema, sendOtpBodySchema, verifyOtpBodySchema } from './schema.js'
 
 export function createAuthRouter(options: {
   sendOtp?: SendOtp
   verifyPhoneOtp?: VerifyPhoneOtp
   refreshSession?: RefreshSession
-}): Hono {
-  const router = new Hono()
+  logout?: Logout
+  logoutAll?: LogoutAll
+}): Hono<GatewayEnvironment> {
+  const router = new Hono<GatewayEnvironment>()
 
   if (options.sendOtp)
     router.post('/otp/send', async (context) => {
@@ -87,6 +95,34 @@ export function createAuthRouter(options: {
         }
         throw error
       }
+    })
+
+  if (options.logout)
+    router.post('/logout', async (context) => {
+      const identity = context.get('requestContext').identity
+      if (identity?.type !== 'user' || !identity.sessionId) {
+        return context.json(
+          { error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } },
+          401,
+        )
+      }
+      await options.logout?.({ sessionId: identity.sessionId })
+      clearAuthCookies(context)
+      return context.body(null, 204)
+    })
+
+  if (options.logoutAll)
+    router.post('/logout-all', async (context) => {
+      const identity = context.get('requestContext').identity
+      if (identity?.type !== 'user') {
+        return context.json(
+          { error: { code: 'UNAUTHENTICATED', message: 'Authentication required' } },
+          401,
+        )
+      }
+      await options.logoutAll?.({ userId: identity.subject })
+      clearAuthCookies(context)
+      return context.body(null, 204)
     })
 
   return router

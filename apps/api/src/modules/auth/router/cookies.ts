@@ -24,6 +24,23 @@ export function setAuthCookies(context: Context, tokenPair: AuthTokenPair): void
   })
 }
 
+export function clearAuthCookies(context: Context): void {
+  setCookie(context, authCookieNames.access, '', {
+    httpOnly: true,
+    maxAge: 0,
+    path: '/',
+    sameSite: 'Lax',
+    secure: true,
+  })
+  setCookie(context, authCookieNames.refresh, '', {
+    httpOnly: true,
+    maxAge: 0,
+    path: '/auth/refresh',
+    sameSite: 'Lax',
+    secure: true,
+  })
+}
+
 export function cookieSessionResponse(tokenPair: AuthTokenPair) {
   return {
     sessionMode: 'cookie' as const,

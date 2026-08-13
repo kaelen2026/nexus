@@ -2,6 +2,7 @@ export interface RuntimeIdentity {
   type: 'user' | 'api_key' | 'service'
   subject: string
   accountId?: string
+  sessionId?: string
   roles: string[]
   scopes: string[]
 }
