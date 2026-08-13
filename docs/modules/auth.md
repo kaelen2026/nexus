@@ -85,6 +85,8 @@ The same external Account cannot belong to multiple Users. Repeated authenticati
 
 Never log OTPs, credentials, tokens, API keys, or Authorization headers.
 
+Runtime composition accepts an `SmsSender` through the Auth public API. The server must not mount the production send-OTP path with a logger, no-op, or test fake standing in for SMS. A concrete provider adapter and its configuration are selected in a focused integration increment.
+
 ## Public API
 
 `index.ts` should expose only capabilities needed outside Auth, such as authentication middleware composition or account-linking use cases. Repo and infra implementations remain private.
