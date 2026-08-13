@@ -22,3 +22,5 @@ export function createDatabase(options: DatabaseOptions) {
 }
 
 export type Database = ReturnType<typeof createDatabase>
+
+export { migrateDatabase } from './migrate.js'
