@@ -68,8 +68,8 @@ export function GenerateWorkspace({
   }
 
   return (
-    <div className="mx-auto w-full max-w-[91rem] px-6 py-12 sm:px-10 lg:px-12 lg:py-16">
-      <div className="grid items-start gap-14 lg:grid-cols-[minmax(22rem,0.82fr)_minmax(30rem,1.18fr)] lg:gap-10 xl:gap-16">
+    <div className="mx-auto w-full max-w-[96rem] px-6 py-12 sm:px-10 lg:py-16">
+      <div className="grid items-start gap-14 lg:grid-cols-[minmax(22rem,0.82fr)_minmax(30rem,1.18fr)] lg:gap-10">
         <section aria-labelledby="generate-heading">
           <h1
             id="generate-heading"
@@ -97,7 +97,7 @@ export function GenerateWorkspace({
                 aria-invalid={Boolean(error)}
                 aria-describedby={error ? 'generation-error' : 'prompt-count'}
                 placeholder="帮我整理一份新产品发布检查清单"
-                className="min-h-56 w-full resize-y rounded-xl border bg-background px-4 py-4 pb-10 text-base leading-7 outline-none transition-shadow placeholder:text-muted-foreground/65 focus:border-primary focus:ring-3 focus:ring-primary/15 aria-invalid:border-destructive"
+                className="min-h-[16.25rem] w-full resize-y rounded-xl border bg-background px-4 py-4 pb-10 text-base leading-7 outline-none transition-shadow placeholder:text-muted-foreground/65 focus:border-primary focus:ring-3 focus:ring-primary/15 aria-invalid:border-destructive sm:text-lg"
               />
               <span
                 id="prompt-count"
@@ -108,12 +108,12 @@ export function GenerateWorkspace({
             </div>
 
             <div className="mt-6 grid gap-5 sm:grid-cols-2">
-              <label className="block text-sm font-semibold">
+              <label className="block text-base font-semibold">
                 模型
                 <span className="relative mt-3 block">
                   <select
                     aria-label="模型"
-                    className="h-14 w-full appearance-none rounded-xl border bg-background px-4 pr-10 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
+                    className="h-14 w-full appearance-none rounded-xl border bg-background px-4 pr-10 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 lg:h-16 lg:text-lg"
                     defaultValue="standard"
                   >
                     <option value="standard">标准模型</option>
@@ -124,14 +124,14 @@ export function GenerateWorkspace({
                   />
                 </span>
               </label>
-              <label className="block text-sm font-semibold">
+              <label className="block text-base font-semibold">
                 最大输出
                 <span className="relative mt-3 block">
                   <select
                     aria-label="最大输出"
                     value={maxTokens}
                     onChange={(event) => setMaxTokens(Number(event.target.value))}
-                    className="h-14 w-full appearance-none rounded-xl border bg-background px-4 pr-10 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15"
+                    className="h-14 w-full appearance-none rounded-xl border bg-background px-4 pr-10 text-base outline-none focus:border-primary focus:ring-3 focus:ring-primary/15 lg:h-16 lg:text-lg"
                   >
                     <option value={500}>500 tokens</option>
                     <option value={1_000}>1,000 tokens</option>
@@ -147,7 +147,7 @@ export function GenerateWorkspace({
 
             <Button
               type="submit"
-              className="mt-7 h-14 w-full rounded-xl text-base"
+              className="mt-7 h-14 w-full rounded-xl text-base lg:h-[4.625rem] lg:text-lg"
               disabled={isSubmitting}
             >
               {isSubmitting ? (
@@ -170,9 +170,9 @@ export function GenerateWorkspace({
           </form>
         </section>
 
-        <section aria-live="polite" className="lg:pt-[4.7rem]">
+        <section aria-live="polite" className="lg:pt-4">
           {isSubmitting ? (
-            <div className="flex min-h-80 items-center justify-center border-y bg-background/70 px-6">
+            <div className="flex min-h-80 items-center justify-center border-y bg-background/70 px-6 lg:min-h-[39rem]">
               <div className="flex items-center gap-3 text-sm text-muted-foreground" role="status">
                 <LoaderCircleIcon className="size-5 animate-spin text-primary" aria-hidden="true" />
                 Nexus 正在生成回答
@@ -198,12 +198,12 @@ export function GenerateWorkspace({
                   </button>
                 </div>
               </div>
-              <div className="mt-5 min-h-80 whitespace-pre-wrap rounded-xl border bg-background px-5 py-6 text-[0.98rem] leading-8 sm:px-6">
+              <div className="mt-7 min-h-80 whitespace-pre-wrap rounded-xl border bg-background px-5 py-6 text-[0.98rem] leading-8 sm:px-6 lg:min-h-[39rem] lg:text-lg lg:leading-9">
                 {result.text}
               </div>
             </div>
           ) : (
-            <div className="flex min-h-80 items-center justify-center border-y border-dashed px-6 text-center text-sm leading-6 text-muted-foreground">
+            <div className="flex min-h-80 items-center justify-center border-y border-dashed px-6 text-center text-sm leading-6 text-muted-foreground lg:min-h-[39rem]">
               生成的内容会显示在这里
             </div>
           )}
