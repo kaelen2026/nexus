@@ -31,7 +31,8 @@ billing/
 
 - `billing_plans`
 - `billing_subscriptions`
-- `billing_entitlements`
+- `billing_plan_entitlements`
+- `billing_plan_quotas`
 - `billing_grants`
 - `billing_usage_records`
 - `billing_usage_reservations`
@@ -63,6 +64,8 @@ Reservations prevent concurrent expensive operations from overspending quota. Co
 Billing idempotently consumes `users.user-created` and creates the free subscription exactly once. It may publish facts such as `billing.subscription-activated` after durable state changes.
 
 The initial implementation uses a synchronous in-memory EventBus. The consumer transaction first claims the event in `billing_event_receipts`, ensures the `free` Plan exists, and then creates the User's unique active Subscription. Duplicate delivery of the same event and delivery under a different event ID are both safe because receipt and User subscription uniqueness are enforced in PostgreSQL.
+
+The initial free policy enables `llm.generate` and grants a 10,000-token quota. Access policy resolution follows only an active Subscription and returns no entitlement or quota for ended subscriptions.
 
 ## Public API
 
