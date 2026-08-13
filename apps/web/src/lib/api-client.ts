@@ -23,6 +23,8 @@ export type CurrentUser = z.infer<typeof currentUserSchema>
 
 export interface NexusApi {
   getCurrentUser(): Promise<CurrentUser>
+  logout(): Promise<void>
+  logoutAll(): Promise<void>
 }
 
 const errorMessages: Record<string, string> = {
@@ -85,7 +87,8 @@ export function createApiClient(): NexusApi {
       throw new ApiError('NETWORK_ERROR', '暂时无法连接服务，请稍后重试')
     }
 
-    const payload: unknown = await response.json().catch(() => null)
+    const payload: unknown =
+      response.status === 204 ? undefined : await response.json().catch(() => null)
     if (response.status === 401 && options.refreshOnUnauthorized !== false) {
       try {
         await refreshSession()
@@ -108,6 +111,18 @@ export function createApiClient(): NexusApi {
 
   return {
     getCurrentUser: () => request('/users/me', { schema: currentUserSchema }),
+    logout: () =>
+      request('/auth/logout', {
+        method: 'POST',
+        schema: z.void(),
+        refreshOnUnauthorized: false,
+      }),
+    logoutAll: () =>
+      request('/auth/logout-all', {
+        method: 'POST',
+        schema: z.void(),
+        refreshOnUnauthorized: false,
+      }),
   }
 }
 

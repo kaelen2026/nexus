@@ -97,4 +97,19 @@ describe('apiClient', () => {
       new ApiError('USER_SUSPENDED', '账户已暂停'),
     )
   })
+
+  it.each([
+    ['logout', '/auth/logout'],
+    ['logoutAll', '/auth/logout-all'],
+  ] as const)('calls %s with cookie credentials', async (method, path) => {
+    const fetchMock = vi.fn().mockResolvedValue(new Response(null, { status: 204 }))
+    vi.stubGlobal('fetch', fetchMock)
+
+    await createApiClient()[method]()
+
+    expect(fetchMock).toHaveBeenCalledWith(
+      `http://localhost:3000${path}`,
+      expect.objectContaining({ method: 'POST', credentials: 'include' }),
+    )
+  })
 })

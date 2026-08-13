@@ -17,7 +17,11 @@ function wrapper({ children }: { children: ReactNode }) {
 }
 
 function createApi(getCurrentUser: NexusApi['getCurrentUser']): NexusApi {
-  return { getCurrentUser }
+  return {
+    getCurrentUser,
+    logout: vi.fn(),
+    logoutAll: vi.fn(),
+  }
 }
 
 describe('CurrentUserHome', () => {
