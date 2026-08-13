@@ -32,7 +32,7 @@ describe('local development runtime', () => {
   })
 
   it('delivers OTPs to the local inbox and generates through the local provider', async () => {
-    const runtime = await createLocalDevelopmentRuntime({ env: { NODE_ENV: 'development' } })
+    const runtime = await createLocalDevelopmentRuntime({ env: environment })
 
     try {
       const phoneNumber = '+8613800138000'
@@ -67,7 +67,7 @@ describe('local development runtime', () => {
         headers: {
           'content-type': 'application/json',
           cookie: accessCookie ?? '',
-          origin: 'http://localhost:3001',
+          origin: 'https://app.nexus.test',
         },
         body: JSON.stringify({ model: 'standard', prompt: 'Hello locally', maxTokens: 100 }),
       })
