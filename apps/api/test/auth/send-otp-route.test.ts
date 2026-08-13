@@ -63,6 +63,43 @@ describe('POST /auth/otp/verify', () => {
     })
   })
 
+  it('stores tokens in HttpOnly cookies for a web session without exposing them in JSON', async () => {
+    const verifyPhoneOtp = vi.fn().mockResolvedValue({
+      tokenType: 'Bearer',
+      accessToken: 'access-token',
+      accessTokenExpiresAt: new Date('2026-08-13T00:15:00.000Z'),
+      refreshToken: 'refresh-token',
+    })
+    const app = createApp({ verifyPhoneOtp })
+
+    const response = await app.request('/auth/otp/verify', {
+      method: 'POST',
+      headers: { 'content-type': 'application/json' },
+      body: JSON.stringify({
+        phoneNumber: '+8613800138000',
+        otp: '123456',
+        sessionMode: 'cookie',
+      }),
+    })
+
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      sessionMode: 'cookie',
+      accessTokenExpiresAt: '2026-08-13T00:15:00.000Z',
+    })
+    const cookies = response.headers.getSetCookie()
+    expect(cookies).toEqual(
+      expect.arrayContaining([
+        expect.stringMatching(
+          /^__Host-nexus_access=access-token;.*Max-Age=900;.*Path=\/;.*HttpOnly;.*Secure;.*SameSite=Lax/,
+        ),
+        expect.stringMatching(
+          /^__Secure-nexus_refresh=refresh-token;.*Max-Age=2592000;.*Path=\/auth\/refresh;.*HttpOnly;.*Secure;.*SameSite=Lax/,
+        ),
+      ]),
+    )
+  })
+
   it('maps every rejected OTP to the same unauthorized response', async () => {
     const verifyPhoneOtp = vi.fn().mockRejectedValue(new InvalidOtpError())
     const app = createApp({ verifyPhoneOtp })
@@ -103,6 +140,31 @@ describe('POST /auth/refresh', () => {
       accessTokenExpiresAt: '2026-08-13T00:15:00.000Z',
       refreshToken: 'next-refresh-token',
     })
+  })
+
+  it('rotates a web session from its refresh cookie', async () => {
+    const refreshSession = vi.fn().mockResolvedValue({
+      tokenType: 'Bearer',
+      accessToken: 'next-access-token',
+      accessTokenExpiresAt: new Date('2026-08-13T00:15:00.000Z'),
+      refreshToken: 'next-refresh-token',
+    })
+    const app = createApp({ refreshSession })
+
+    const response = await app.request('/auth/refresh', {
+      method: 'POST',
+      headers: { cookie: '__Secure-nexus_refresh=current-refresh-token-at-least-32-chars' },
+    })
+
+    expect(refreshSession).toHaveBeenCalledWith({
+      refreshToken: 'current-refresh-token-at-least-32-chars',
+    })
+    expect(response.status).toBe(200)
+    await expect(response.json()).resolves.toEqual({
+      sessionMode: 'cookie',
+      accessTokenExpiresAt: '2026-08-13T00:15:00.000Z',
+    })
+    expect(response.headers.getSetCookie()).toHaveLength(2)
   })
 
   it('does not disclose why a refresh token is rejected', async () => {

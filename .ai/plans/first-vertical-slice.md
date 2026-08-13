@@ -32,8 +32,9 @@ Each increment uses a short-lived branch, a focused PR, and an explicit Red/Gree
 | PostgreSQL runtime wiring and end-to-end verification | done | PR #15 |
 | Access/refresh token primitives | done | PR #16 |
 | Refresh token persistence, rotation, and reuse detection | done | PR #17 |
-| Issue tokens from verify and add refresh endpoint | in progress | Current feature PR |
-| Authentication gateway and `GET /users/me` | next | Not started |
+| Issue tokens from verify and add refresh endpoint | done | PR #18 |
+| Web HttpOnly Cookie session transport | in progress | Current feature PR |
+| Authentication gateway, CSRF protection, and `GET /users/me` | next | Not started |
 | SMS provider selection and server wiring | deferred | After core local Auth flow |
 
 Update this table in every vertical-slice PR that changes scope or status.

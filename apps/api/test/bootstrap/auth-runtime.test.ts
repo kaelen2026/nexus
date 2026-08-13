@@ -51,31 +51,35 @@ describe('Auth runtime composition', () => {
       const verifyResponse = await runtime.app.request('/auth/otp/verify', {
         method: 'POST',
         headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ phoneNumber: '+8613800138000', otp: '123456' }),
+        body: JSON.stringify({
+          phoneNumber: '+8613800138000',
+          otp: '123456',
+          sessionMode: 'cookie',
+        }),
       })
       expect(verifyResponse.status).toBe(200)
       const tokenPair = await verifyResponse.json()
       expect(tokenPair).toEqual({
-        tokenType: 'Bearer',
-        accessToken: expect.any(String),
+        sessionMode: 'cookie',
         accessTokenExpiresAt: expect.any(String),
-        refreshToken: expect.any(String),
       })
+      const refreshCookie = verifyResponse.headers
+        .getSetCookie()
+        .find((cookie) => cookie.startsWith('__Secure-nexus_refresh='))
+        ?.split(';', 1)[0]
+      expect(refreshCookie).toBeDefined()
 
       const refreshResponse = await runtime.app.request('/auth/refresh', {
         method: 'POST',
-        headers: { 'content-type': 'application/json' },
-        body: JSON.stringify({ refreshToken: tokenPair.refreshToken }),
+        headers: { cookie: refreshCookie ?? '' },
       })
       expect(refreshResponse.status).toBe(200)
       const refreshedTokenPair = await refreshResponse.json()
       expect(refreshedTokenPair).toEqual({
-        tokenType: 'Bearer',
-        accessToken: expect.any(String),
+        sessionMode: 'cookie',
         accessTokenExpiresAt: expect.any(String),
-        refreshToken: expect.any(String),
       })
-      expect(refreshedTokenPair.refreshToken).not.toBe(tokenPair.refreshToken)
+      expect(refreshResponse.headers.getSetCookie()).toHaveLength(2)
 
       const replayResponse = await runtime.app.request('/auth/otp/verify', {
         method: 'POST',
