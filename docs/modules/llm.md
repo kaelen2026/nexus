@@ -59,7 +59,9 @@ Provider failure finalizes the request and releases the reservation.
 
 The initial non-streaming service resolves the `standard` logical model, checks the `llm.generate` entitlement, and reserves the requested total-token budget under `llm.tokens`. Provider success commits normalized input plus output tokens; provider failure releases the reservation before propagating a provider-neutral error. A failure after the Provider succeeds does not release consumed quota.
 
-`POST /llm/generate` requires a Gateway-authenticated User and always takes `userId` from `Identity.subject`. The router validates the logical model, prompt, and requested token budget. Missing entitlement or quota maps to `403 LLM_ACCESS_DENIED`; adapter failures map to `502 LLM_PROVIDER_ERROR` without exposing provider details. Durable LLM request records remain in the next increment.
+`POST /llm/generate` requires a Gateway-authenticated User and always takes `userId` from `Identity.subject`. The router validates the logical model, prompt, and requested token budget. Missing entitlement or quota maps to `403 LLM_ACCESS_DENIED`; adapter failures map to `502 LLM_PROVIDER_ERROR` without exposing provider details.
+
+Every operation that reaches a Provider has a durable `llm_requests` lifecycle record. The record stores the User, logical and provider model identifiers, normalized Provider input/output token usage, provider-neutral error code, and completion timestamps. It deliberately does not duplicate Billing usage or persist raw provider error details. Successful records finalize only after Billing usage commits; post-provider internal failures are recorded without releasing already consumed quota.
 
 ## Streaming
 
