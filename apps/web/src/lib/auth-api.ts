@@ -23,6 +23,12 @@ export interface AuthApi {
     otp: string
     sessionMode: 'cookie'
   }): Promise<z.infer<typeof cookieSessionResponseSchema>>
+  sendEmailOtp(input: { email: string }): Promise<z.infer<typeof sendOtpResponseSchema>>
+  verifyEmailOtp(input: {
+    email: string
+    otp: string
+    sessionMode: 'cookie'
+  }): Promise<z.infer<typeof cookieSessionResponseSchema>>
 }
 
 const errorMessages: Record<string, string> = {
@@ -60,4 +66,6 @@ async function request<T>(path: string, body: unknown, schema: z.ZodType<T>): Pr
 export const authApi: AuthApi = {
   sendOtp: (input) => request('/auth/otp/send', input, sendOtpResponseSchema),
   verifyOtp: (input) => request('/auth/otp/verify', input, cookieSessionResponseSchema),
+  sendEmailOtp: (input) => request('/auth/email/otp/send', input, sendOtpResponseSchema),
+  verifyEmailOtp: (input) => request('/auth/email/otp/verify', input, cookieSessionResponseSchema),
 }

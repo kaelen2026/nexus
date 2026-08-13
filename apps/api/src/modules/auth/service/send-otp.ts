@@ -21,7 +21,7 @@ export function createSendOtp(dependencies: SendOtpDependencies) {
     const expiresAt = new Date(dependencies.clock.now().getTime() + dependencies.ttlSeconds * 1_000)
 
     await dependencies.challengeStore.save({
-      phoneNumber,
+      subject: phoneNumber,
       otpHash: dependencies.hashOtp(phoneNumber, otp),
       expiresAt,
     })

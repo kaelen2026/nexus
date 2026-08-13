@@ -54,7 +54,7 @@ describe('Auth runtime composition', () => {
 
       expect(response.status).toBe(202)
       expect(sendSms).toHaveBeenCalledWith({ phoneNumber: '+8613800138000', otp: '123456' })
-      expect(await inspector.get('auth:otp:+8613800138000')).toMatch(/^[a-f0-9]{64}$/)
+      expect(await inspector.get('auth:otp:phone:+8613800138000')).toMatch(/^[a-f0-9]{64}$/)
 
       const verifyResponse = await runtime.app.request('/auth/otp/verify', {
         method: 'POST',

@@ -12,7 +12,9 @@ import {
   type Logout,
   type LogoutAll,
   type RefreshSession,
+  type SendEmailOtp,
   type SendOtp,
+  type VerifyEmailOtp,
   type VerifyPhoneOtp,
 } from './modules/auth/index.js'
 import { createLlmRouter, type Generate } from './modules/llm/index.js'
@@ -22,6 +24,8 @@ interface AppDependencies {
   authenticateAccessToken?: AuthenticateAccessToken
   trustedOrigins?: string[]
   sendOtp?: SendOtp
+  sendEmailOtp?: SendEmailOtp
+  verifyEmailOtp?: VerifyEmailOtp
   verifyPhoneOtp?: VerifyPhoneOtp
   refreshSession?: RefreshSession
   logout?: Logout
@@ -46,6 +50,8 @@ export function createApp(dependencies: AppDependencies = {}): Hono<GatewayEnvir
   app.get('/health', (context) => context.json({ status: 'ok' }))
   if (
     dependencies.sendOtp ||
+    dependencies.sendEmailOtp ||
+    dependencies.verifyEmailOtp ||
     dependencies.verifyPhoneOtp ||
     dependencies.refreshSession ||
     dependencies.logout ||

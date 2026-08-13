@@ -1,6 +1,6 @@
 import { z } from 'zod'
 
-import { createLocalDevelopmentSms } from '../modules/auth/index.js'
+import { createLocalDevelopmentEmail, createLocalDevelopmentSms } from '../modules/auth/index.js'
 import { createLocalDevelopmentLlmProvider } from '../modules/llm/index.js'
 import { createApiRuntime } from './runtime.js'
 
@@ -25,6 +25,7 @@ export async function createLocalDevelopmentRuntime(options: {
   }
 
   const sms = createLocalDevelopmentSms()
+  const email = createLocalDevelopmentEmail()
   const runtime = await createApiRuntime({
     env: {
       DATABASE_URL: options.env.DATABASE_URL ?? localDefaults.DATABASE_URL,
@@ -33,6 +34,7 @@ export async function createLocalDevelopmentRuntime(options: {
       TOKEN_SECRET: options.env.TOKEN_SECRET ?? localDefaults.TOKEN_SECRET,
       TRUSTED_ORIGINS: options.env.TRUSTED_ORIGINS ?? localDefaults.TRUSTED_ORIGINS,
     },
+    emailSender: email.sender,
     llmProvider: createLocalDevelopmentLlmProvider(),
     smsSender: sms.sender,
   })
@@ -40,6 +42,19 @@ export async function createLocalDevelopmentRuntime(options: {
   runtime.app.get('/dev/sms/latest', (context) => {
     const phoneNumber = context.req.query('phoneNumber')
     const message = phoneNumber ? sms.getLatest(phoneNumber) : undefined
+    context.header('cache-control', 'no-store')
+    if (!message) {
+      return context.json(
+        { error: { code: 'MESSAGE_NOT_FOUND', message: 'Message not found' } },
+        404,
+      )
+    }
+    return context.json(message)
+  })
+
+  runtime.app.get('/dev/email/latest', (context) => {
+    const address = context.req.query('email')
+    const message = address ? email.getLatest(address) : undefined
     context.header('cache-control', 'no-store')
     if (!message) {
       return context.json(

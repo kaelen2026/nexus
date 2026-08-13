@@ -1,0 +1,1 @@
+ALTER TYPE "public"."auth_account_provider" ADD VALUE 'email';

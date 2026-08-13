@@ -1,16 +1,20 @@
 export interface OtpChallenge {
-  phoneNumber: string
+  subject: string
   otpHash: string
   expiresAt: Date
 }
 
 export interface OtpChallengeStore {
   save(challenge: OtpChallenge): Promise<void>
-  consume(phoneNumber: string, otpHash: string): Promise<boolean>
+  consume(subject: string, otpHash: string): Promise<boolean>
 }
 
 export interface SmsSender {
   sendOtp(message: { phoneNumber: string; otp: string }): Promise<void>
+}
+
+export interface EmailSender {
+  sendOtp(message: { email: string; otp: string }): Promise<void>
 }
 
 export interface Clock {
@@ -18,8 +22,10 @@ export interface Clock {
 }
 
 export type SendOtp = (input: { phoneNumber: string }) => Promise<{ expiresAt: Date }>
+export type SendEmailOtp = (input: { email: string }) => Promise<{ expiresAt: Date }>
 
 export type VerifyPhoneOtp = (input: { phoneNumber: string; otp: string }) => Promise<AuthTokenPair>
+export type VerifyEmailOtp = (input: { email: string; otp: string }) => Promise<AuthTokenPair>
 
 export interface AuthTokenPair {
   tokenType: 'Bearer'
