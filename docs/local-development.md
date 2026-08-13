@@ -70,6 +70,19 @@ already `http://localhost:3000`; override it when needed by creating `apps/web/.
 NEXT_PUBLIC_API_BASE_URL=http://localhost:3000
 ```
 
+## Google and Apple authentication
+
+OAuth providers are enabled only when their complete environment-variable group is present. Set
+`APP_PUBLIC_URL` to the web origin and `API_PUBLIC_URL` to the externally reachable API origin.
+
+For Google, register `${API_PUBLIC_URL}/auth/oauth/google/callback` as an authorized redirect URI,
+then set `GOOGLE_CLIENT_ID` and `GOOGLE_CLIENT_SECRET`.
+
+For Apple, register `${API_PUBLIC_URL}/auth/oauth/apple/callback` as the Services ID return URL,
+then set `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, and `APPLE_PRIVATE_KEY`. Apple requires
+an HTTPS return URL with a domain name, so its flow cannot use `localhost`; use an HTTPS development
+domain or tunnel. A multiline private key may be supplied with literal `\\n` separators.
+
 The API development command starts `apps/api/src/server.ts` on `http://localhost:3000`:
 
 ```bash
